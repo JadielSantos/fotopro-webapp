@@ -11,7 +11,7 @@ interface PasswordAccessFormProps {
 export const PasswordAccessForm: React.FC<PasswordAccessFormProps> = ({
   className = '',
 }) => {
-  const { slug } = useParams();
+  const { accessHash } = useParams();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +21,7 @@ export const PasswordAccessForm: React.FC<PasswordAccessFormProps> = ({
   const [isValid, setIsValid] = useState(false);
 
   useEffect(() => {
-    if (!slug) {
+    if (!accessHash) {
       setError('Link de compartilhamento inválido');
       setIsValidating(false);
       return;
@@ -30,14 +30,14 @@ export const PasswordAccessForm: React.FC<PasswordAccessFormProps> = ({
     const validateLink = async () => {
       try {
         setIsValidating(true);
-        const result = await shareService.validateShareLink(slug);
+        const result = await shareService.validateShareLink(accessHash);
 
         setIsValid(result.valid);
         setShareType(result.type);
 
         // Se o link for válido e público, redirecionar diretamente para o álbum
         if (result.valid && result.type === ShareType.PUBLIC) {
-          navigate(`/s/${slug}/view`);
+          navigate(`/access/${accessHash}/view`);
         }
       } catch (err) {
         setError('Erro ao validar link de compartilhamento');
@@ -47,12 +47,12 @@ export const PasswordAccessForm: React.FC<PasswordAccessFormProps> = ({
     };
 
     validateLink();
-  }, [slug, navigate]);
+  }, [accessHash, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!slug) {
+    if (!accessHash) {
       setError('Link de compartilhamento inválido');
       return;
     }
@@ -61,16 +61,16 @@ export const PasswordAccessForm: React.FC<PasswordAccessFormProps> = ({
     setIsLoading(true);
 
     try {
-      const result = await shareService.accessWithPassword(slug, { password });
+      const result = await shareService.accessWithPassword(accessHash, { password });
 
       if (result.success) {
         // Armazenar token temporário para acesso ao álbum
         if (result.token) {
-          localStorage.setItem(`album_access_${slug}`, result.token);
+          localStorage.setItem(`album_access_${accessHash}`, result.token);
         }
 
         // Redirecionar para visualização do álbum
-        navigate(`/s/${slug}/view`);
+        navigate(`/access/${accessHash}/view`);
       } else {
         setError(result.message || 'Senha incorreta');
       }
@@ -89,7 +89,7 @@ export const PasswordAccessForm: React.FC<PasswordAccessFormProps> = ({
     );
   }
 
-  if (!isValid || !slug) {
+  if (!isValid || !accessHash) {
     return (
       <div className={`bg-red-50 border border-red-200 rounded-lg p-6 text-center ${className}`}>
         <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

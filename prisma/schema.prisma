@@ -1,0 +1,127 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
+// enough when changing adapters.
+// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_CONNECTION_STRING")
+}
+
+enum UserType {
+  CUSTOMER
+  PHOTOGRAPHER
+  ADMIN
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  name               String
+  email              String    @unique
+  emailVerified      Boolean   @default(false)
+  emailCode          String? // Code to verify email
+  emailCodeSentAt    DateTime?
+  emailVerifiedAt    DateTime?
+  password           String // bcrypt hash
+  passwordCode       String? // Code to reset password
+  passwordCodeSentAt DateTime?
+  passwordResetAt    DateTime?
+  type               UserType  @default(CUSTOMER)
+  phone              String?
+  phoneCode          String?
+  phoneCodeSentAt    DateTime?
+  phoneVerified      Boolean   @default(false)
+  phoneVerifiedAt    DateTime?
+  events             Event[]
+  location           Location? @relation(fields: [locationId], references: [id])
+  locationId         String?
+  isBlocked          Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+
+  @@index([id, email], name: "idx_user_id_email")
+}
+
+model Event {
+  id                   String   @id @default(cuid())
+  title                String
+  description          String
+  isPublic             Boolean  @default(false)
+  date                 DateTime
+  location             Location @relation(fields: [locationId], references: [id])
+  locationId           String
+  user                 User     @relation(fields: [userId], references: [id])
+  userId               String
+  albums               Album[]
+  accessHash           String   @unique
+  pricePerPhoto        Float    @default(0.0)
+  currency             String   @default("BRL")
+  coverPhotoUrl        String?
+  displayCoverPhotoUrl Boolean  @default(false)
+  displayUser          Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now()) @updatedAt
+
+  @@index([id, title, date, locationId, userId], name: "idx_event_id_title_date_locationId_userId")
+}
+
+model Location {
+  id           String   @id @default(cuid())
+  name         String
+  address      String
+  number       String?
+  address2     String?
+  neighborhood String?
+  city         String
+  state        String
+  country      String
+  zipCode      String
+  latitude     Float?
+  longitude    Float?
+  events       Event[]
+  createdAt    DateTime @default(now())
+  User         User[]
+
+  @@index([id, name, latitude, longitude], name: "idx_location_id_name_latitude_longitude")
+}
+
+model Album {
+  id                   String   @id @default(cuid())
+  title                String
+  displayTitle         Boolean  @default(false)
+  description          String?
+  displayDescription   Boolean  @default(false)
+  displayCoverPhotoUrl Boolean  @default(false)
+  isPublic             Boolean  @default(false)
+  event                Event    @relation(fields: [eventId], references: [id])
+  eventId              String
+  photos               Photo[]
+  coverPhotoId         String?
+  accessHash           String   @unique
+  pricePerPhoto        Float    @default(0.0)
+  currency             String   @default("BRL")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now()) @updatedAt
+
+  @@index([id, title, eventId], name: "idx_album_id_title_eventId")
+}
+
+model Photo {
+  id          String   @id @default(cuid())
+  url         String
+  altText     String?
+  display     Boolean  @default(true)
+  isWatermark Boolean  @default(true)
+  isOriginal  Boolean  @default(false)
+  isEdited    Boolean  @default(false)
+  album       Album    @relation(fields: [albumId], references: [id])
+  albumId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@index([id, url, albumId], name: "idx_photo_id_url_albumId")
+}

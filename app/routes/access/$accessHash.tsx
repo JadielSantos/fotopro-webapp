@@ -2,21 +2,21 @@ import { type LoaderFunctionArgs, useLoaderData } from 'react-router';
 import { PasswordAccessForm } from '~/components/album/PasswordAccessForm';
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
-  const { slug } = params;
+  const { accessHash } = params;
 
-  if (!slug) {
+  if (!accessHash) {
     throw new Response('Link de compartilhamento inválido', { status: 400 });
   }
 
   // Em um ambiente real, buscaríamos informações básicas sobre o link
   // Por enquanto, retornamos apenas o slug
   return {
-    slug
+    accessHash
   };
 }
 
 export default function SharedAlbumAccessPage() {
-  const { slug } = useLoaderData<typeof loader>();
+  const { accessHash } = useLoaderData<typeof loader>();
 
   return (
     <div className="shared-album-access-page min-h-screen bg-gray-50 py-12">

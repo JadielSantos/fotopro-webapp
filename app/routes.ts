@@ -1,16 +1,55 @@
-import { type RouteConfig, index, route } from "@react-router/dev/routes";
+import {
+  type RouteConfig,
+  route,
+  index,
+  layout,
+  prefix,
+} from "@react-router/dev/routes";
 
-const routes = [
-  index("routes/home.tsx"),
-  route("login/user", "routes/login.client.tsx"),
-  route("login/photographer", "routes/login.photographer.tsx"),
-  route("register/user", "routes/register.client.tsx"),
-  route("register/photographer", "routes/register.photographer.tsx"),
-  route("dashboard/photographer", "routes/dashboard.photographer._index.tsx"),
-  route("dashboard/user", "routes/dashboard.client._index.tsx"),
-  route("dashboard/photographer/albums/:id", "routes/dashboard.photographer.albums.$albumId.process.tsx"),
-  route("dashboard/photographer/albums/:id/share", "routes/dashboard.photographer.albums.$albumId.share.tsx"),
-  route("access-denied", "routes/access-denied.tsx"),
-];
+export default [
+  index("./routes/_index.tsx"),
 
-export default routes satisfies RouteConfig;
+  layout("./routes/auth/layout.tsx", [
+    route("login", "./routes/auth/login.tsx"),
+    route("register", "./routes/auth/register.tsx"),
+  ]),
+
+  layout("./routes/dashboard/layout.tsx", [
+    index("./routes/dashboard/_index.tsx"),
+    ...prefix("events", [
+      index("./routes/dashboard/events/_index.tsx"),
+      route("new", "./routes/dashboard/events/new.tsx"),
+      layout("./routes/dashboard/events/$eventId/layout.tsx", [
+        index("./routes/dashboard/events/$eventId/_index.tsx"),
+        route("edit", "./routes/dashboard/events/$eventId/edit.tsx"),
+        ...prefix("albums", [
+          index("./routes/dashboard/events/$eventId/albums/_index.tsx"),
+          route("new", "./routes/dashboard/events/$eventId/albums/new.tsx"),
+          layout(
+            "./routes/dashboard/events/$eventId/albums/$albumId/layout.tsx",
+            [
+              index(
+                "./routes/dashboard/events/$eventId/albums/$albumId/_index.tsx"
+              ),
+              route(
+                "edit",
+                "./routes/dashboard/events/$eventId/albums/$albumId/edit.tsx"
+              ),
+              ...prefix("photos", [
+                index(
+                  "./routes/dashboard/events/$eventId/albums/$albumId/photos/_index.tsx"
+                ),
+                route(
+                  "new",
+                  "./routes/dashboard/events/$eventId/albums/$albumId/photos/new.tsx"
+                ),
+              ]),
+            ]
+          ),
+        ]),
+      ]),
+    ]),
+  ]),
+
+  route("access/:accessHash", "./routes/access/$accessHash.tsx"),
+] satisfies RouteConfig;

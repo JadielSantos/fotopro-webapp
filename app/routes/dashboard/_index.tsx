@@ -11,11 +11,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
   };
 }
 
-export default function PhotographerDashboardPage() {
+export default function Dashboard() {
   const data = useLoaderData<typeof loader>();
 
   return (
-    <div className="photographer-dashboard">
+    <div className="dashboard">
       <h1 className="text-2xl font-bold mb-6">Dashboard do Fotógrafo</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
