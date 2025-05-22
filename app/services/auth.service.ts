@@ -58,7 +58,9 @@ class AuthService {
   }
 
   // Registro de cliente
-  async registerClient(data: ClientRegistration): Promise<AuthResponse> {
+  async registerClient(
+    data: ClientRegistration
+  ): Promise<AuthResponse | { error: string }> {
     try {
       const response = await fetch("/api/auth/register/client", {
         method: "POST",
@@ -76,7 +78,7 @@ class AuthService {
       return await response.json();
     } catch (error) {
       console.error("Erro no registro de cliente:", error);
-      throw error;
+      return { error: (error as Error).message || "Erro desconhecido" };
     }
   }
 

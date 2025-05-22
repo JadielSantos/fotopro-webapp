@@ -1,39 +1,38 @@
 // Tipos de usuário do sistema
 export enum UserRole {
-  PHOTOGRAPHER = 'photographer',
-  CLIENT = 'client'
+  PHOTOGRAPHER = "photographer",
+  CUSTOMER = "customer",
 }
 
 // Interface base para usuários
 export interface User {
   id: string;
-  email: string;
   name: string;
+  email: string;
+  password: string;
   role: UserRole;
-  createdAt: string;
-  updatedAt: string;
+  phone?: string;
+  lastAccess?: Date;
+  isBlocked?: boolean;
+  createdAt: Date;
 }
 
 // Interface específica para fotógrafos
 export interface Photographer extends User {
   role: UserRole.PHOTOGRAPHER;
   businessName?: string;
-  phone?: string;
   bio?: string;
-  profileImage?: string;
-  website?: string;
-  socialMedia?: {
-    instagram?: string;
-    facebook?: string;
-    twitter?: string;
-  };
+  profileImageUrl?: string;
+  coverImageUrl?: string;
+  websiteUrl?: string;
+  instagramUsername?: string;
+  facebookUsername?: string;
+  xUsername?: string;
 }
 
 // Interface específica para clientes
-export interface Client extends User {
-  role: UserRole.CLIENT;
-  phone?: string;
-  lastAccess?: string;
+export interface Customer extends User {
+  role: UserRole.CUSTOMER;
 }
 
 // Dados para login
@@ -41,23 +40,6 @@ export interface LoginCredentials {
   email: string;
   password: string;
   role: UserRole;
-}
-
-// Dados para registro de fotógrafo
-export interface PhotographerRegistration {
-  email: string;
-  password: string;
-  name: string;
-  businessName?: string;
-  phone?: string;
-}
-
-// Dados para registro de cliente
-export interface ClientRegistration {
-  email: string;
-  password: string;
-  name: string;
-  phone?: string;
 }
 
 // Resposta de autenticação

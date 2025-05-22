@@ -13,7 +13,7 @@ datasource db {
   url      = env("DB_CONNECTION_STRING")
 }
 
-enum UserType {
+enum UserRole {
   CUSTOMER
   PHOTOGRAPHER
   ADMIN
@@ -31,12 +31,21 @@ model User {
   passwordCode       String? // Code to reset password
   passwordCodeSentAt DateTime?
   passwordResetAt    DateTime?
-  type               UserType  @default(CUSTOMER)
-  phone              String?
+  bio                String?
+  role               UserRole  @default(CUSTOMER)
+  phone              String
   phoneCode          String?
   phoneCodeSentAt    DateTime?
   phoneVerified      Boolean   @default(false)
   phoneVerifiedAt    DateTime?
+  profileImageUrl    String?
+  coverImageUrl      String?
+  businessName       String?
+  instagramUsername  String?
+  facebookUsername   String?
+  xUsername          String?
+  websiteUrl         String?
+  lastAccessAt       DateTime?
   events             Event[]
   location           Location? @relation(fields: [locationId], references: [id])
   locationId         String?

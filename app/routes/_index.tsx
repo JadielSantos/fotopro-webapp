@@ -23,12 +23,12 @@ export default function HomePage() {
               Encontre todas as suas fotos agrupadas por pessoa.
             </p>
             <div className="mt-10 flex justify-center gap-4">
-              <Link to="/login/photographer">
+              <Link to="/auth/login">
                 <Button variant="outline" size="lg">
                   Sou Fotógrafo
                 </Button>
               </Link>
-              <Link to="/login/client">
+              <Link to="/auth/login">
                 <Button variant="primary" size="lg">
                   Sou Cliente
                 </Button>

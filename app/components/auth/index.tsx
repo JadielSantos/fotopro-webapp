@@ -1,20 +1,17 @@
 import React from 'react';
 import { LoginForm } from './LoginForm';
-import { PhotographerRegisterForm } from './PhotographerRegisterForm';
-import { ClientRegisterForm } from './ClientRegisterForm';
+import { RegisterForm } from './RegisterForm';
 
 // Exporta todos os componentes de autenticação de uma vez
 export {
   LoginForm,
-  PhotographerRegisterForm,
-  ClientRegisterForm
+  RegisterForm
 };
 
 // Componente de índice para facilitar importações
 const Auth = {
   LoginForm,
-  PhotographerRegisterForm,
-  ClientRegisterForm
+  RegisterForm
 };
 
 export default Auth;

@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "UserType" AS ENUM ('CUSTOMER', 'PHOTOGRAPHER', 'ADMIN');
+CREATE TYPE "UserRole" AS ENUM ('CUSTOMER', 'PHOTOGRAPHER', 'ADMIN');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -14,12 +14,21 @@ CREATE TABLE "User" (
     "passwordCode" TEXT,
     "passwordCodeSentAt" TIMESTAMP(3),
     "passwordResetAt" TIMESTAMP(3),
-    "type" "UserType" NOT NULL DEFAULT 'CUSTOMER',
-    "phone" TEXT,
+    "bio" TEXT,
+    "role" "UserRole" NOT NULL DEFAULT 'CUSTOMER',
+    "phone" TEXT NOT NULL,
     "phoneCode" TEXT,
     "phoneCodeSentAt" TIMESTAMP(3),
     "phoneVerified" BOOLEAN NOT NULL DEFAULT false,
     "phoneVerifiedAt" TIMESTAMP(3),
+    "profileImageUrl" TEXT,
+    "coverImageUrl" TEXT,
+    "businessName" TEXT,
+    "instagramUsername" TEXT,
+    "facebookUsername" TEXT,
+    "xUsername" TEXT,
+    "websiteUrl" TEXT,
+    "lastAccessAt" TIMESTAMP(3),
     "locationId" TEXT,
     "isBlocked" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

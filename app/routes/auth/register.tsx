@@ -1,6 +1,8 @@
 import { type LoaderFunctionArgs, useLoaderData } from 'react-router';
-import { ClientRegisterForm } from '~/components/auth';
+import { RegisterForm } from '~/components/auth';
 import { requireGuest } from '~/utils/auth.server';
+import { authService } from '~/services/auth.service';
+import { error } from 'console';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   // Verificar se o usuário já está autenticado
@@ -9,7 +11,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
   return {};
 }
 
-export default function ClientRegisterPage() {
+export async function action({ request }: LoaderFunctionArgs) {
+  const data = {
+    ...Object.fromEntries(await request.formData())
+  };
+
+  const response: any = await authService.registerClient(data);
+
+  if (response.error) return { error: response.error };
+
+  authService.saveAuthData(response);
+  return response;
+}
+
+export default function Register() {
   const data = useLoaderData<typeof loader>();
 
   return (
@@ -25,7 +40,7 @@ export default function ClientRegisterPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <ClientRegisterForm
+          <RegisterForm
             redirectTo="/dashboard/client"
           />
         </div>
