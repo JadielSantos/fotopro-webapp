@@ -1,9 +1,9 @@
 import prisma from "../../db.server";
 import { handleDatabaseOperation } from "../../utils/util.ts";
 
-export default class UserService {
+class User {
   // Create a new user
-  static async create(data) {
+  async create(data) {
     if (!data || typeof data !== "object")
       throw new Error("Invalid data provided for user creation.");
 
@@ -11,12 +11,15 @@ export default class UserService {
   }
 
   // Get all users
-  static async getAll() {
+  async getAll() {
     return handleDatabaseOperation(() => prisma.user.findMany());
   }
 
-  // Get a single user by ID
-  static async getById(id) {
+  /* Get a single user by ID
+    * @param {string} id - The ID of the user to retrieve.
+    * @returns {Promise<Object>} - A promise that resolves to the user object.
+    */
+  async getById(id) {
     if (!id) throw new Error("Invalid ID provided for user retrieval.");
 
     return handleDatabaseOperation(() =>
@@ -26,8 +29,23 @@ export default class UserService {
     );
   }
 
+  /* Get users by query
+    * @param {Object} query - The query object to filter users.
+    * @returns {Promise<Array>} - A promise that resolves to an array of users matching the query.
+    */
+  async getByQuery(query) {
+    if (!query || typeof query !== "object")
+      throw new Error("Invalid query provided for user retrieval.");
+
+    return handleDatabaseOperation(() =>
+      prisma.user.findMany({
+        where: query,
+      })
+    );
+  }
+
   // Update a user by ID
-  static async update(id, data) {
+  async update(id, data) {
     if (!data || typeof data !== "object" || !id)
       throw new Error("Invalid data provided for user update.");
 
@@ -40,7 +58,7 @@ export default class UserService {
   }
 
   // Delete a user by ID
-  static async delete(id) {
+  async delete(id) {
     if (!id) throw new Error("Invalid ID provided for user deletion.");
 
     return handleDatabaseOperation(() =>
@@ -50,3 +68,5 @@ export default class UserService {
     );
   }
 }
+
+export const user = new User();

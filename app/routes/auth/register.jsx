@@ -1,31 +1,29 @@
-import { type LoaderFunctionArgs, useLoaderData } from 'react-router';
+import { useLoaderData } from 'react-router';
 import { RegisterForm } from '~/components/auth';
 import { requireGuest } from '~/utils/auth.server';
-import { authService } from '~/services/auth.service';
-import { error } from 'console';
+import { userController } from '../../controllers/user.controller';
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }) {
   // Verificar se o usuário já está autenticado
   await requireGuest(request);
 
   return {};
 }
 
-export async function action({ request }: LoaderFunctionArgs) {
+export async function action({ request }) {
   const data = {
     ...Object.fromEntries(await request.formData())
   };
 
-  const response: any = await authService.registerClient(data);
+  const response = await userController.register(data);
 
   if (response.error) return { error: response.error };
 
-  authService.saveAuthData(response);
   return response;
 }
 
 export default function Register() {
-  const data = useLoaderData<typeof loader>();
+  const data = useLoaderData();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

@@ -1,7 +1,7 @@
 import prisma from "../../db.server";
 import { handleDatabaseOperation } from "../../utils/util.ts";
 
-export default class PhotoService {
+class Photo {
   // Create a new photo
   static async create(data) {
     if (!data || typeof data !== "object")
@@ -50,3 +50,5 @@ export default class PhotoService {
     );
   }
 }
+
+export const photo = new Photo();
