@@ -1,53 +1,66 @@
 import prisma from "../../db.server";
-import { handleDatabaseOperation } from "../../utils/util.ts";
 
 class Event {
   // Create a new event
   static async create(data) {
-    if (!data || typeof data !== "object")
-      throw new Error("Invalid data provided for event creation.");
+    try {
+      if (!data || typeof data !== "object")
+        throw new Error("Invalid data provided for event creation.");
 
-    return handleDatabaseOperation(() => prisma.event.create({ data }));
+      return await prisma.event.create({ data });
+    } catch (error) {
+      throw new Error("Failed to create event.");
+    }
   }
 
   // Get all events
   static async getAll() {
-    return handleDatabaseOperation(() => prisma.event.findMany());
+    try {
+      return await prisma.event.findMany();
+    } catch (error) {
+      throw new Error("Failed to retrieve events.");
+    }
   }
 
   // Get a single event by ID
   static async getById(id) {
-    if (!id) throw new Error("Invalid ID provided for event retrieval.");
+    try {
+      if (!id) throw new Error("Invalid ID provided for event retrieval.");
 
-    return handleDatabaseOperation(() =>
-      prisma.event.findUnique({
+      return await prisma.event.findUnique({
         where: { id },
-      })
-    );
+      });
+    } catch (error) {
+      throw new Error("Failed to retrieve event by ID.");
+    }
   }
 
   // Update an event by ID
   static async update(id, data) {
-    if (!data || typeof data !== "object" || !id)
-      throw new Error("Invalid data provided for event update.");
+    try {
+      if (!data || typeof data !== "object" || !id)
+        throw new Error("Invalid data provided for event update.");
 
-    return handleDatabaseOperation(() =>
-      prisma.event.update({
+      return await prisma.event.update({
         where: { id },
         data,
-      })
-    );
+      });
+    } catch (error) {
+      throw new Error("Failed to update event.");
+    }
   }
 
   // Delete an event by ID
   static async delete(id) {
-    if (!id) throw new Error("Invalid ID provided for event deletion.");
+    try {
+      if (!id) throw new Error("Invalid ID provided for event deletion.");
 
-    return handleDatabaseOperation(() =>
-      prisma.event.delete({
+      return await prisma.event.delete({
         where: { id },
-      })
-    );
+      });
+    } catch (error) {
+      throw new Error("Failed to delete event.");
+    }
   }
 }
 

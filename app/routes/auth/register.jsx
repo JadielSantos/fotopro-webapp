@@ -1,12 +1,21 @@
 import { useLoaderData } from 'react-router';
-import { RegisterForm } from '~/components/auth';
-import { requireGuest } from '~/utils/auth.server';
+import { RegisterForm } from '../../components/auth';
 import { userController } from '../../controllers/user.controller';
+import { getAuthToken } from '../../utils/auth.server';
 
 export async function loader({ request }) {
-  // Verificar se o usuário já está autenticado
-  await requireGuest(request);
+  const token = await getAuthToken(request);
 
+  if (token) {
+    const validationResponse = await userController.validateToken(token);
+
+    if (validationResponse.status === 200) {
+      // If the token is valid, redirect to the profile page
+      return redirect("/profile");
+    }
+  }
+
+  // If no token or invalid token, allow access to the login page
   return {};
 }
 

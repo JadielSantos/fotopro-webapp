@@ -1,5 +1,4 @@
 import prisma from "../../db.server";
-import { handleDatabaseOperation } from "../../utils/util.ts";
 
 class Album {
   // Create a new album

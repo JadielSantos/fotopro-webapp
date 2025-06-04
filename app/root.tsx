@@ -1,14 +1,10 @@
 import {
   isRouteErrorResponse,
-  Links,
-  Meta,
   Outlet,
-  Scripts,
-  ScrollRestoration,
 } from "react-router";
-import { Navbar, NavbarBrand, NavbarCollapse, NavbarLink, NavbarToggle } from "flowbite-react";
 import type { Route } from "./+types/root";
 import "./app.css";
+import favicon from "./assets/final_favicon_centered.ico";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -21,52 +17,12 @@ export const links: Route.LinksFunction = () => [
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
+  {
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..900;1,100..900&display=swap",
+  },
+  { rel: "icon", href: favicon },
 ];
-
-export function Layout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Meta />
-        <Links />
-      </head>
-      <body>
-        <NavbarMenu />
-        {children}
-        <ScrollRestoration />
-        <Scripts />
-      </body>
-    </html>
-  );
-}
-
-function NavbarMenu() {
-  return (
-    <Navbar fluid={true} rounded={true} className="bg-blue-600 text-white">
-      <NavbarBrand href="/">
-        <img
-          src="/logo.png"
-          className="mr-3 h-6 sm:h-9"
-          alt="Logo"
-        />
-        <span className="self-center whitespace-nowrap text-xl font-semibold">
-          FotoPro
-        </span>
-      </NavbarBrand >
-      <NavbarToggle />
-      <NavbarCollapse>
-        <NavbarLink href="/" active={true}>
-          Home
-        </NavbarLink>
-        <NavbarLink href="/profile">Perfil</NavbarLink>
-        <NavbarLink href="/auth/login">Login</NavbarLink>
-        <NavbarLink href="/auth/register">Registrar</NavbarLink>
-      </NavbarCollapse>
-    </Navbar>
-  );
-}
 
 export default function App() {
   return <Outlet />;

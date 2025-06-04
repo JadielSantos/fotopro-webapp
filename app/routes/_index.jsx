@@ -1,7 +1,7 @@
-import { Link, useLoaderData, type LoaderFunctionArgs, } from 'react-router';
+import { Link } from 'react-router';
 import { Button, Card } from "flowbite-react";
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }) {
   return {};
 }
 

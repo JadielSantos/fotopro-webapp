@@ -1,53 +1,66 @@
 import prisma from "../../db.server";
-import { handleDatabaseOperation } from "../../utils/util.ts";
 
 class Photo {
   // Create a new photo
   static async create(data) {
-    if (!data || typeof data !== "object")
-      throw new Error("Invalid data provided for photo creation.");
+    try {
+      if (!data || typeof data !== "object")
+        throw new Error("Invalid data provided for photo creation.");
 
-    return handleDatabaseOperation(() => prisma.photo.create({ data }));
+      return await prisma.photo.create({ data });
+    } catch (error) {
+      throw new Error("Failed to create photo.");
+    }
   }
 
   // Get all photos
   static async getAll() {
-    return handleDatabaseOperation(() => prisma.photo.findMany());
+    try {
+      return await prisma.photo.findMany();
+    } catch (error) {
+      throw new Error("Failed to retrieve photos.");
+    }
   }
 
   // Get a single photo by ID
   static async getById(id) {
-    if (!id) throw new Error("Invalid ID provided for photo retrieval.");
+    try {
+      if (!id) throw new Error("Invalid ID provided for photo retrieval.");
 
-    return handleDatabaseOperation(() =>
-      prisma.photo.findUnique({
+      return await prisma.photo.findUnique({
         where: { id },
-      })
-    );
+      });
+    } catch (error) {
+      throw new Error("Failed to retrieve photo by ID.");
+    }
   }
 
   // Update a photo by ID
   static async update(id, data) {
-    if (!data || typeof data !== "object" || !id)
-      throw new Error("Invalid data provided for photo update.");
+    try {
+      if (!data || typeof data !== "object" || !id)
+        throw new Error("Invalid data provided for photo update.");
 
-    return handleDatabaseOperation(() =>
-      prisma.photo.update({
+      return await prisma.photo.update({
         where: { id },
         data,
-      })
-    );
+      });
+    } catch (error) {
+      throw new Error("Failed to update photo.");
+    }
   }
 
   // Delete a photo by ID
   static async delete(id) {
-    if (!id) throw new Error("Invalid ID provided for photo deletion.");
+    try {
+      if (!id) throw new Error("Invalid ID provided for photo deletion.");
 
-    return handleDatabaseOperation(() =>
-      prisma.photo.delete({
+      return await prisma.photo.delete({
         where: { id },
-      })
-    );
+      });
+    } catch (error) {
+      throw new Error("Failed to delete photo.");
+    }
   }
 }
 

@@ -1,7 +1,6 @@
-import { json, redirect } from "@remix-run/node";
-import { useLoaderData, Form, useActionData } from "@remix-run/react";
-import { userController } from "../../controllers/user.controller";
-import { getAuthToken } from "../../utils/auth.server";
+import { useLoaderData, Form, useActionData, redirect } from "react-router";
+import { userController } from "../controllers/user.controller";
+import { getAuthToken } from "../utils/auth.server";
 import { Button, Label, TextInput, Select, Alert } from "flowbite-react";
 
 export async function loader({ request }) {

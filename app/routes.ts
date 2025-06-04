@@ -7,49 +7,50 @@ import {
 } from "@react-router/dev/routes";
 
 export default [
-  index("./routes/_index.tsx"),
+  layout("./routes/layout.jsx", [
+    index("./routes/_index.jsx"),
 
-  layout("./routes/auth", [
-    route("login", "./routes/auth/login.tsx"),
-    route("register", "./routes/auth/register.tsx"),
-  ]),
+    route("access/:accessHash", "./routes/access/$accessHash.jsx"),
+    route("access/access-denied", "./routes/access/access-denied.jsx"),
+    route("not-found", "./routes/not-found.jsx"),
+    route("profile", "./routes/profile.jsx"),
 
-  layout("./routes/dashboard/layout.tsx", [
-    index("./routes/dashboard/_index.tsx"),
-    ...prefix("events", [
-      index("./routes/dashboard/events/_index.tsx"),
-      route("new", "./routes/dashboard/events/new.tsx"),
-      layout("./routes/dashboard/events/$eventId/layout.tsx", [
-        index("./routes/dashboard/events/$eventId/_index.tsx"),
-        route("edit", "./routes/dashboard/events/$eventId/edit.tsx"),
-        ...prefix("albums", [
-          index("./routes/dashboard/events/$eventId/albums/_index.tsx"),
-          route("new", "./routes/dashboard/events/$eventId/albums/new.tsx"),
-          layout(
-            "./routes/dashboard/events/$eventId/albums/$albumId/layout.tsx",
-            [
+    ...prefix("auth", [
+      route("login", "./routes/auth/login.jsx"),
+      route("register", "./routes/auth/register.jsx"),
+    ]),
+
+    layout("./routes/dashboard/layout.jsx", [
+      ...prefix("events", [
+        index("./routes/dashboard/events/_index.jsx"),
+        route("new", "./routes/dashboard/events/new.jsx"),
+        ...prefix("$eventId", [
+          index("./routes/dashboard/events/$eventId/_index.jsx"),
+          route("edit", "./routes/dashboard/events/$eventId/edit.jsx"),
+          ...prefix("albums", [
+            index("./routes/dashboard/events/$eventId/albums/_index.jsx"),
+            route("new", "./routes/dashboard/events/$eventId/albums/new.jsx"),
+            ...prefix("$albumId", [
               index(
-                "./routes/dashboard/events/$eventId/albums/$albumId/_index.tsx"
+                "./routes/dashboard/events/$eventId/albums/$albumId/_index.jsx"
               ),
               route(
                 "edit",
-                "./routes/dashboard/events/$eventId/albums/$albumId/edit.tsx"
+                "./routes/dashboard/events/$eventId/albums/$albumId/edit.jsx"
               ),
               ...prefix("photos", [
                 index(
-                  "./routes/dashboard/events/$eventId/albums/$albumId/photos/_index.tsx"
+                  "./routes/dashboard/events/$eventId/albums/$albumId/photos/_index.jsx"
                 ),
                 route(
                   "new",
-                  "./routes/dashboard/events/$eventId/albums/$albumId/photos/new.tsx"
+                  "./routes/dashboard/events/$eventId/albums/$albumId/photos/new.jsx"
                 ),
               ]),
-            ]
-          ),
+            ]),
+          ]),
         ]),
       ]),
     ]),
   ]),
-
-  route("access/:accessHash", "./routes/access/$accessHash.tsx"),
 ] satisfies RouteConfig;

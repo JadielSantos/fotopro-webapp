@@ -1,71 +1,86 @@
 import prisma from "../../db.server";
-import { handleDatabaseOperation } from "../../utils/util.ts";
 
 class User {
   // Create a new user
   async create(data) {
-    if (!data || typeof data !== "object")
-      throw new Error("Invalid data provided for user creation.");
+    try {
+      if (!data || typeof data !== "object")
+        throw new Error("Invalid data provided for user creation.");
 
-    return handleDatabaseOperation(() => prisma.user.create({ data }));
+      return await prisma.user.create({ data });
+    } catch (error) {
+      throw new Error("Failed to create user.");
+    }
   }
 
   // Get all users
   async getAll() {
-    return handleDatabaseOperation(() => prisma.user.findMany());
+    try {
+      return await prisma.user.findMany();
+    } catch (error) {
+      throw new Error("Failed to retrieve users.");
+    }
   }
 
   /* Get a single user by ID
-    * @param {string} id - The ID of the user to retrieve.
-    * @returns {Promise<Object>} - A promise that resolves to the user object.
-    */
+   * @param {string} id - The ID of the user to retrieve.
+   * @returns {Promise<Object>} - A promise that resolves to the user object.
+   */
   async getById(id) {
-    if (!id) throw new Error("Invalid ID provided for user retrieval.");
+    try {
+      if (!id) throw new Error("Invalid ID provided for user retrieval.");
 
-    return handleDatabaseOperation(() =>
-      prisma.user.findUnique({
+      return await prisma.user.findUnique({
         where: { id },
-      })
-    );
+      });
+    } catch (error) {
+      throw new Error("Failed to retrieve user by ID.");
+    }
   }
 
   /* Get users by query
-    * @param {Object} query - The query object to filter users.
-    * @returns {Promise<Array>} - A promise that resolves to an array of users matching the query.
-    */
+   * @param {Object} query - The query object to filter users.
+   * @returns {Promise<Array>} - A promise that resolves to an array of users matching the query.
+   */
   async getByQuery(query) {
-    if (!query || typeof query !== "object")
-      throw new Error("Invalid query provided for user retrieval.");
+    try {
+      if (!query || typeof query !== "object")
+        throw new Error("Invalid query provided for user retrieval.");
 
-    return handleDatabaseOperation(() =>
-      prisma.user.findMany({
+      return await prisma.user.findMany({
         where: query,
-      })
-    );
+      });
+    } catch (error) {
+      throw new Error("Failed to retrieve users by query.");
+    }
   }
 
   // Update a user by ID
   async update(id, data) {
-    if (!data || typeof data !== "object" || !id)
-      throw new Error("Invalid data provided for user update.");
+    try {
+      if (!data || typeof data !== "object" || !id)
+        throw new Error("Invalid data provided for user update.");
 
-    return handleDatabaseOperation(() =>
-      prisma.user.update({
+      return await prisma.user.update({
         where: { id },
         data,
-      })
-    );
+      });
+    } catch (error) {
+      throw new Error("Failed to update user.");
+    }
   }
 
   // Delete a user by ID
   async delete(id) {
-    if (!id) throw new Error("Invalid ID provided for user deletion.");
+    try {
+      if (!id) throw new Error("Invalid ID provided for user deletion.");
 
-    return handleDatabaseOperation(() =>
-      prisma.user.delete({
+      return await prisma.user.delete({
         where: { id },
-      })
-    );
+      });
+    } catch (error) {
+      throw new Error("Failed to delete user.");
+    }
   }
 }
 
