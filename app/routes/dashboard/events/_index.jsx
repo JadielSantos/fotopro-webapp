@@ -1,5 +1,5 @@
 import { useLoaderData, Link } from "react-router";
-import { Label, TextInput, Select, Button, Card } from "flowbite-react";
+import { Label, TextInput, Select, Button, Card, Carousel } from "flowbite-react";
 
 export async function loader() {
   // Simulação de dados de eventos
@@ -38,6 +38,23 @@ export default function EventsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Banner with Slider */}
+      <Carousel className="h-64">
+        {events.map((event) => (
+          <div key={event.id} className="relative h-full">
+            <img
+              src={event.image}
+              alt={event.title}
+              className="object-cover w-full h-full"
+            />
+            <div className="absolute bottom-0 left-0 bg-black bg-opacity-50 text-white p-4">
+              <h3 className="text-lg font-bold">{event.title}</h3>
+              <p className="text-sm">Fotógrafo: {event.photographer}</p>
+            </div>
+          </div>
+        ))}
+      </Carousel>
+
       {/* Filtro */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-4">Eventos</h1>

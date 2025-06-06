@@ -24,30 +24,17 @@ export default [
       ...prefix("events", [
         index("./routes/dashboard/events/_index.jsx"),
         route("new", "./routes/dashboard/events/new.jsx"),
-        ...prefix("$eventId", [
-          index("./routes/dashboard/events/$eventId/_index.jsx"),
-          route("edit", "./routes/dashboard/events/$eventId/edit.jsx"),
-          ...prefix("albums", [
-            index("./routes/dashboard/events/$eventId/albums/_index.jsx"),
-            route("new", "./routes/dashboard/events/$eventId/albums/new.jsx"),
-            ...prefix("$albumId", [
-              index(
-                "./routes/dashboard/events/$eventId/albums/$albumId/_index.jsx"
-              ),
-              route(
-                "edit",
-                "./routes/dashboard/events/$eventId/albums/$albumId/edit.jsx"
-              ),
-              ...prefix("photos", [
-                index(
-                  "./routes/dashboard/events/$eventId/albums/$albumId/photos/_index.jsx"
-                ),
-                route(
-                  "new",
-                  "./routes/dashboard/events/$eventId/albums/$albumId/photos/new.jsx"
-                ),
-              ]),
-            ]),
+        ...prefix(":eventId", [
+          index("./routes/dashboard/events/$eventId.jsx"),
+          route("edit", "./routes/dashboard/events/edit.jsx"),
+          ...prefix("photos", [
+            index(
+              "./routes/dashboard/events/photos/_index.jsx"
+            ),
+            route(
+              "face-filtered",
+              "./routes/dashboard/events/photos/face-filtered.jsx"
+            ),
           ]),
         ]),
       ]),

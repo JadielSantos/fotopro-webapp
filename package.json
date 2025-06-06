@@ -11,6 +11,7 @@
     "postinstall": "flowbite-react patch"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@prisma/client": "^6.8.2",
     "@react-router/node": "^7.5.3",
     "@react-router/serve": "^7.5.3",

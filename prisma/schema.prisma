@@ -47,76 +47,44 @@ model User {
   websiteUrl         String?
   lastAccessAt       DateTime?
   events             Event[]
-  location           Location? @relation(fields: [locationId], references: [id])
-  locationId         String?
   isBlocked          Boolean   @default(false)
   createdAt          DateTime  @default(now())
 
   @@index([id, email], name: "idx_user_id_email")
+  @@index([instagramUsername], name: "idx_user_instagramUsername")
+  @@index([name], name: "idx_user_name")
+  @@index([role], name: "idx_user_role")
 }
 
 model Event {
-  id                   String   @id @default(cuid())
-  title                String
-  description          String
-  isPublic             Boolean  @default(false)
-  date                 DateTime
-  location             Location @relation(fields: [locationId], references: [id])
-  locationId           String
-  user                 User     @relation(fields: [userId], references: [id])
-  userId               String
-  albums               Album[]
-  accessHash           String   @unique
-  pricePerPhoto        Float    @default(0.0)
-  currency             String   @default("BRL")
-  coverPhotoUrl        String?
-  displayCoverPhotoUrl Boolean  @default(false)
-  displayUser          Boolean  @default(false)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @default(now()) @updatedAt
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  isPublic      Boolean  @default(false)
+  date          DateTime
+  addressName   String?
+  address       String?
+  number        String?
+  address2      String?
+  neighborhood  String?
+  city          String
+  state         String
+  country       String
+  zipCode       String?
+  user          User     @relation(fields: [userId], references: [id])
+  userId        String
+  accessHash    String   @unique
+  pricePerPhoto Float    @default(0.0)
+  currency      String   @default("BRL")
+  displayUser   Boolean  @default(false)
+  photos        Photo[]  @relation("EventPhotos")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
 
-  @@index([id, title, date, locationId, userId], name: "idx_event_id_title_date_locationId_userId")
-}
-
-model Location {
-  id           String   @id @default(cuid())
-  name         String
-  address      String
-  number       String?
-  address2     String?
-  neighborhood String?
-  city         String
-  state        String
-  country      String
-  zipCode      String
-  latitude     Float?
-  longitude    Float?
-  events       Event[]
-  createdAt    DateTime @default(now())
-  User         User[]
-
-  @@index([id, name, latitude, longitude], name: "idx_location_id_name_latitude_longitude")
-}
-
-model Album {
-  id                   String   @id @default(cuid())
-  title                String
-  displayTitle         Boolean  @default(false)
-  description          String?
-  displayDescription   Boolean  @default(false)
-  displayCoverPhotoUrl Boolean  @default(false)
-  isPublic             Boolean  @default(false)
-  event                Event    @relation(fields: [eventId], references: [id])
-  eventId              String
-  photos               Photo[]
-  coverPhotoId         String?
-  accessHash           String   @unique
-  pricePerPhoto        Float    @default(0.0)
-  currency             String   @default("BRL")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @default(now()) @updatedAt
-
-  @@index([id, title, eventId], name: "idx_album_id_title_eventId")
+  @@index([id, title, date, userId], name: "idx_event_id_title_date_userId")
+  @@index([city, state, country], name: "idx_event_city_state_country")
+  @@index([userId, date], name: "idx_event_userId_date")
+  @@index([addressName], name: "idx_event_addressName")
 }
 
 model Photo {
@@ -124,13 +92,15 @@ model Photo {
   url         String
   altText     String?
   display     Boolean  @default(true)
+  isCover     Boolean  @default(false)
   isWatermark Boolean  @default(true)
   isOriginal  Boolean  @default(false)
-  isEdited    Boolean  @default(false)
-  album       Album    @relation(fields: [albumId], references: [id])
-  albumId     String
+  event       Event    @relation("EventPhotos", fields: [eventId], references: [id])
+  eventId     String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 
-  @@index([id, url, albumId], name: "idx_photo_id_url_albumId")
+  @@index([id, url, eventId], name: "idx_photo_id_url_eventId")
+  @@index([isCover], name: "idx_photo_isCover")
+  @@index([display], name: "idx_photo_display")
 }

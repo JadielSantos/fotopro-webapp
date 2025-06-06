@@ -2,6 +2,7 @@
 export enum UserRole {
   PHOTOGRAPHER = "photographer",
   CUSTOMER = "customer",
+  ADMIN = "admin",
 }
 
 // Interface base para usuários
