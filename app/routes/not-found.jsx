@@ -17,7 +17,7 @@ export default function NotFound() {
         >
           <button
             type="button"
-            className="px-6 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300"
+            className="px-6 py-3 text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:ring-4 focus:ring-primary-300"
           >
             Voltar para a página inicial
           </button>

@@ -52,10 +52,15 @@ CREATE TABLE "Event" (
     "country" TEXT NOT NULL,
     "zipCode" TEXT,
     "userId" TEXT NOT NULL,
-    "accessHash" TEXT NOT NULL,
+    "accessHash" TEXT,
     "pricePerPhoto" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
     "currency" TEXT NOT NULL DEFAULT 'BRL',
-    "displayUser" BOOLEAN NOT NULL DEFAULT false,
+    "relevanceScore" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "isFeatured" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isArchived" BOOLEAN NOT NULL DEFAULT false,
+    "publishAt" TIMESTAMP(3),
+    "unpublishAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -107,6 +112,18 @@ CREATE INDEX "idx_event_userId_date" ON "Event"("userId", "date");
 
 -- CreateIndex
 CREATE INDEX "idx_event_addressName" ON "Event"("addressName");
+
+-- CreateIndex
+CREATE INDEX "idx_event_isPublic" ON "Event"("isPublic");
+
+-- CreateIndex
+CREATE INDEX "idx_event_isFeatured" ON "Event"("isFeatured");
+
+-- CreateIndex
+CREATE INDEX "idx_event_isActive" ON "Event"("isActive");
+
+-- CreateIndex
+CREATE INDEX "idx_event_relevanceScore" ON "Event"("relevanceScore");
 
 -- CreateIndex
 CREATE INDEX "idx_photo_id_url_eventId" ON "Photo"("id", "url", "eventId");

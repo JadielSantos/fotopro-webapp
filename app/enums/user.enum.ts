@@ -1,0 +1,5 @@
+export enum UserRole {
+  PHOTOGRAPHER = "PHOTOGRAPHER",
+  CUSTOMER = "CUSTOMER",
+  ADMIN = "ADMIN",
+}

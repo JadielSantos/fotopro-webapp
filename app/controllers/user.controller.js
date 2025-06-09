@@ -1,11 +1,31 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { user } from "../models/db/user";
+import { userModel } from "../models/user.model";
 
-const JWT_SECRET = "42819ee6-70c3-4e22-8b2c-e13973fce55e"; // Substitua por uma chave secreta segura
-const JWT_EXPIRATION = "1h"; // Tempo de expiração do token
+const JWT_SECRET = process.env.JWT_SECRET; // Substitua por uma chave secreta segura
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION; // Tempo de expiração do token
 
 class UserController {
+  async getById(id) {
+    try {
+      // Validate ID
+      if (!id) {
+        return { status: 400, message: "Invalid ID provided." };
+      }
+      // Fetch user by ID
+      const user = await userModel.getById(id);
+      if (!user) {
+        return { status: 404, message: "User not found.", error: true };
+      }
+      // Return user data without password
+      const { password, ...userData } = user;
+      return { status: 200, data: userData };
+    } catch (error) {
+      console.error("Error fetching user by ID:", error);
+      return { status: 500, message: "Internal server error.", error: true };
+    }
+  }
+
   async register(userData) {
     try {
       // Validate userData
@@ -14,7 +34,7 @@ class UserController {
       }
 
       // Check if user already exists
-      const existingUser = await user.getByQuery({
+      const existingUser = await userModel.getByQuery({
         email: userData.email,
       });
 
@@ -31,7 +51,7 @@ class UserController {
       };
 
       // Save the new user to the database
-      const newUserResult = await user.create(newUser);
+      const newUserResult = await userModel.create(newUser);
       if (!newUserResult) {
         console.error("Failed to create user:", newUserResult);
         throw new Error("Failed to create user.");
@@ -59,13 +79,16 @@ class UserController {
       }
 
       // Find user by email
-      const [existingUser] = await user.getByQuery({ email });
+      const [existingUser] = await userModel.getByQuery({ email });
       if (!existingUser) {
         return { status: 404, message: "User not found." };
       }
 
       // Verify password
-      const isPasswordValid = await bcrypt.compare(password, existingUser.password);
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        existingUser.password
+      );
       if (!isPasswordValid) {
         return { status: 401, message: "Invalid credentials." };
       }
@@ -81,9 +104,13 @@ class UserController {
   async createLoginData(userData) {
     try {
       // Generate a JWT token
-      const token = jwt.sign({ id: userData.id, email: userData.email }, JWT_SECRET, {
-        expiresIn: JWT_EXPIRATION,
-      });
+      const token = jwt.sign(
+        { id: userData.id, email: userData.email },
+        JWT_SECRET,
+        {
+          expiresIn: JWT_EXPIRATION,
+        }
+      );
 
       return {
         user: {

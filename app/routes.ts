@@ -20,22 +20,20 @@ export default [
       route("register", "./routes/auth/register.jsx"),
     ]),
 
-    layout("./routes/dashboard/layout.jsx", [
-      ...prefix("events", [
-        index("./routes/dashboard/events/_index.jsx"),
-        route("new", "./routes/dashboard/events/new.jsx"),
-        ...prefix(":eventId", [
-          index("./routes/dashboard/events/$eventId.jsx"),
-          route("edit", "./routes/dashboard/events/edit.jsx"),
-          ...prefix("photos", [
-            index(
-              "./routes/dashboard/events/photos/_index.jsx"
-            ),
-            route(
-              "face-filtered",
-              "./routes/dashboard/events/photos/face-filtered.jsx"
-            ),
-          ]),
+    ...prefix("events", [
+      index("./routes/events/_index.jsx"),
+      route("new", "./routes/events/new.jsx"),
+      ...prefix(":eventId", [
+        index("./routes/events/$eventId.jsx"),
+        route("edit", "./routes/events/$eventId.edit.jsx"),
+        ...prefix("photos", [
+          index(
+            "./routes/events/photos/_index.jsx"
+          ),
+          route(
+            "face-filtered",
+            "./routes/events/photos/face-filtered.jsx"
+          ),
         ]),
       ]),
     ]),

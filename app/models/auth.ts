@@ -1,8 +1,8 @@
 // Tipos de usuário do sistema
 export enum UserRole {
-  PHOTOGRAPHER = "photographer",
-  CUSTOMER = "customer",
-  ADMIN = "admin",
+  PHOTOGRAPHER = "PHOTOGRAPHER",
+  CUSTOMER = "CUSTOMER",
+  ADMIN = "ADMIN",
 }
 
 // Interface base para usuários

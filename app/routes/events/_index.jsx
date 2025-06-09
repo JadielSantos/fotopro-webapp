@@ -1,46 +1,26 @@
 import { useLoaderData, Link } from "react-router";
 import { Label, TextInput, Select, Button, Card, Carousel } from "flowbite-react";
+import { eventController } from "../../controllers/event.controller";
 
 export async function loader() {
-  // Simulação de dados de eventos
-  const events = [
-    {
-      id: 1,
-      image: "/images/event1.jpg",
-      date: "2025-06-04",
-      location: { city: "Blumenau", state: "SC" },
-      title: "Casamento dos Sonhos",
-      photographer: "João Silva",
-    },
-    {
-      id: 2,
-      image: "/images/event2.jpg",
-      date: "2025-06-10",
-      location: { city: "Curitiba", state: "PR" },
-      title: "Festa de Aniversário",
-      photographer: "Maria Oliveira",
-    },
-    {
-      id: 3,
-      image: "/images/event3.jpg",
-      date: "2025-06-15",
-      location: { city: "Porto Alegre", state: "RS" },
-      title: "Evento Corporativo",
-      photographer: "Carlos Souza",
-    },
-  ];
+  // Pega 3 eventos de maior relevanceScore
+  const eventsRelevantResponse = await eventController.listRelevant(3);
+  const eventsListResponse = await eventController.listPaginated(1, 50);
 
-  return { events };
+  return {
+    eventsRelevant: !eventsRelevantResponse.error ? eventsRelevantResponse.data : [],
+    events: !eventsListResponse.error ? eventsListResponse.data.events : [],
+  };
 }
 
 export default function EventsPage() {
-  const { events } = useLoaderData();
+  const { eventsRelevant, events } = useLoaderData();
 
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Banner with Slider */}
       <Carousel className="h-64">
-        {events.map((event) => (
+        {eventsRelevant.map((event) => (
           <div key={event.id} className="relative h-full">
             <img
               src={event.image}

@@ -1,38 +1,48 @@
 import { redirect, useLoaderData, Form, useActionData } from "react-router";
 import { Label, TextInput, Textarea, Button, Card, FileInput, Alert } from "flowbite-react";
-import { getAuthToken } from "../../../utils/auth.server";
-import { userController } from "../../../controllers/user.controller";
+import { getAuthToken } from "../../utils/auth.server";
+import { userController } from "../../controllers/user.controller";
+import { UserRole } from "../../enums/user.enum";
+import { eventController } from "../../controllers/event.controller";
 
 export async function loader({ request, params }) {
   const token = await getAuthToken(request);
 
   if (!token) {
-    return redirect("/auth/login");
+    return redirect("/events");
   }
 
   const validationResponse = await userController.validateToken(token);
 
-  if (
-    validationResponse.status !== 200 ||
-    (validationResponse.data.role !== "photographer" &&
-      validationResponse.data.role !== "ADMIN")
-  ) {
-    return redirect("/access/access-denied");
+  if (validationResponse.error) {
+    return redirect("/events");
   }
 
-  const event = {
-    id: params.eventId,
-    title: "Casamento dos Sonhos",
-    location: { city: "Blumenau", state: "SC" },
-    date: "2025-06-04",
-    description: "Um evento inesquecível.",
-    photos: Array.from({ length: 50 }, (_, index) => ({
-      id: index + 1,
-      url: `/images/photo${index + 1}.jpg`,
-    })),
-  };
+  const user = validationResponse.data;
 
-  return { user: validationResponse.data, event };
+  // Fetch additional user details if needed
+  const userResponse = await userController.getById(user.id);
+
+  if (userResponse.error) {
+    console.error("Error fetching user details:", userResponse.message);
+    return redirect("/events");
+  }
+
+  const eventResponse = await eventController.findById(params.eventId);
+  if (eventResponse?.error && eventResponse.status === 404) {
+    console.error("Event not found for ID:", params.eventId);
+    return redirect("/not-found");
+  } else if (eventResponse?.error) {
+    console.error("Error fetching event details:", eventResponse.message);
+    return redirect("/events");
+  }
+
+  if (userResponse.data.id !== eventResponse.data.userId && userResponse.data.role !== UserRole.ADMIN) {
+    console.error("Access denied: User does not have permission to edit this event.");
+    return redirect("/events");
+  }
+
+  return { user: userResponse.data, event: eventResponse.data };
 }
 
 export async function action({ request, params }) {

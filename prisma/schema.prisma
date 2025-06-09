@@ -57,34 +57,43 @@ model User {
 }
 
 model Event {
-  id            String   @id @default(cuid())
-  title         String
-  description   String
-  isPublic      Boolean  @default(false)
-  date          DateTime
-  addressName   String?
-  address       String?
-  number        String?
-  address2      String?
-  neighborhood  String?
-  city          String
-  state         String
-  country       String
-  zipCode       String?
-  user          User     @relation(fields: [userId], references: [id])
-  userId        String
-  accessHash    String   @unique
-  pricePerPhoto Float    @default(0.0)
-  currency      String   @default("BRL")
-  displayUser   Boolean  @default(false)
-  photos        Photo[]  @relation("EventPhotos")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  id             String    @id @default(cuid())
+  title          String
+  description    String
+  isPublic       Boolean   @default(false)
+  date           DateTime
+  addressName    String?
+  address        String?
+  number         String?
+  address2       String?
+  neighborhood   String?
+  city           String
+  state          String
+  country        String
+  zipCode        String?
+  user           User      @relation(fields: [userId], references: [id])
+  userId         String
+  accessHash     String?   @unique
+  pricePerPhoto  Float     @default(0.0)
+  currency       String    @default("BRL")
+  photos         Photo[]   @relation("EventPhotos")
+  relevanceScore Float     @default(0.0)
+  isFeatured     Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  isArchived     Boolean   @default(false)
+  publishAt      DateTime?
+  unpublishAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
 
   @@index([id, title, date, userId], name: "idx_event_id_title_date_userId")
   @@index([city, state, country], name: "idx_event_city_state_country")
   @@index([userId, date], name: "idx_event_userId_date")
   @@index([addressName], name: "idx_event_addressName")
+  @@index([isPublic], name: "idx_event_isPublic")
+  @@index([isFeatured], name: "idx_event_isFeatured")
+  @@index([isActive], name: "idx_event_isActive")
+  @@index([relevanceScore], name: "idx_event_relevanceScore")
 }
 
 model Photo {

@@ -1,4 +1,4 @@
-import prisma from "../../db.server";
+import prisma from "../db.server";
 
 class User {
   // Create a new user
@@ -84,4 +84,4 @@ class User {
   }
 }
 
-export const user = new User();
+export const userModel = new User();

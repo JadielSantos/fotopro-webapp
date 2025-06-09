@@ -1,29 +1,31 @@
-import prisma from "../../db.server";
+import prisma from "../db.server";
 
 class Event {
   // Create a new event
-  static async create(data) {
+  async create(data) {
     try {
       if (!data || typeof data !== "object")
         throw new Error("Invalid data provided for event creation.");
+    
+      console.log("Creating event with data:", data);
 
       return await prisma.event.create({ data });
     } catch (error) {
-      throw new Error("Failed to create event.");
+      throw new Error(error);
     }
   }
 
   // Get all events
-  static async getAll() {
+  async getAll() {
     try {
       return await prisma.event.findMany();
     } catch (error) {
-      throw new Error("Failed to retrieve events.");
+      throw new Error(error);
     }
   }
 
   // Get a single event by ID
-  static async getById(id) {
+  async getById(id) {
     try {
       if (!id) throw new Error("Invalid ID provided for event retrieval.");
 
@@ -31,27 +33,48 @@ class Event {
         where: { id },
       });
     } catch (error) {
-      throw new Error("Failed to retrieve event by ID.");
+      throw new Error(error);
+    }
+  }
+
+  async getByQuery(query) {
+    try {
+      if (!query || typeof query !== "object")
+        throw new Error("Invalid query provided for event retrieval.");
+
+      return await prisma.event.findMany({
+        where: query,
+      });
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  async count() {
+    try {
+      return await prisma.event.count();
+    } catch (error) {
+      throw new Error(error);
     }
   }
 
   // Update an event by ID
-  static async update(id, data) {
+  async update(id, data) {
     try {
       if (!data || typeof data !== "object" || !id)
-        throw new Error("Invalid data provided for event update.");
+        throw new Error(error);
 
       return await prisma.event.update({
         where: { id },
         data,
       });
     } catch (error) {
-      throw new Error("Failed to update event.");
+      throw new Error(error);
     }
   }
 
   // Delete an event by ID
-  static async delete(id) {
+  async delete(id) {
     try {
       if (!id) throw new Error("Invalid ID provided for event deletion.");
 
@@ -59,9 +82,9 @@ class Event {
         where: { id },
       });
     } catch (error) {
-      throw new Error("Failed to delete event.");
+      throw new Error(error);
     }
   }
 }
 
-export const event = new Event();
+export const eventModel = new Event();

@@ -1,25 +1,24 @@
-import { useLoaderData, Link } from "react-router";
+import { useLoaderData, Link, redirect } from "react-router";
 import { Card, Button } from "flowbite-react";
 import {
   FiCalendar,
   FiMapPin,
 } from "react-icons/fi";
+import { eventController } from "../../controllers/event.controller";
 
 export async function loader({ params }) {
   const { eventId } = params;
 
-  // Simulação de dados do evento (substituir por lógica real no backend)
-  const event = {
-    id: eventId,
-    title: "Casamento dos Sonhos",
-    location: { city: "Blumenau", state: "SC" },
-    date: "2025-06-04",
-    photographer: "João Silva",
-    totalPhotos: 120,
-    coverPhoto: "/images/event1.jpg",
-  };
+  const eventResponse = await eventController.findById(eventId);
+  if (eventResponse?.error && eventResponse.status === 404) {
+    console.error("Event not found for ID:", eventId);
+    return redirect("/not-found");
+  } else if (eventResponse?.error) {
+    console.error("Error fetching event details:", eventResponse.message);
+    return redirect("/events");
+  }
 
-  return { event };
+  return { event: eventResponse.data };
 }
 
 export default function EventPage() {

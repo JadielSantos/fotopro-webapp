@@ -12,7 +12,7 @@ import {
   Radio,
 } from "flowbite-react";
 import { HiMail } from "react-icons/hi";
-import { UserRole } from "../../models/auth";
+import { UserRole } from "../../enums/user.enum";
 
 export default function Register() {
   return (

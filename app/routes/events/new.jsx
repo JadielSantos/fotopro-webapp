@@ -1,0 +1,248 @@
+import { redirect, Form, useActionData, useSubmit, useLoaderData } from "react-router";
+import { Label, TextInput, Select, Button, Alert, Textarea, Datepicker } from "flowbite-react";
+import { getAuthToken } from "../../utils/auth.server";
+import { userController } from "../../controllers/user.controller";
+import { UserRole } from "../../enums/user.enum";
+import { eventController } from "../../controllers/event.controller";
+
+export async function loader({ request }) {
+  const token = await getAuthToken(request);
+
+  if (!token) {
+    return redirect("/events");
+  }
+
+  const validationResponse = await userController.validateToken(token);
+
+  if (validationResponse.error) {
+    return redirect("/events");
+  }
+
+  const user = validationResponse.data;
+
+  // Fetch additional user details if needed
+  const userResponse = await userController.getById(user.id);
+
+  if (userResponse.error) {
+    console.error("Error fetching user details:", userResponse.message);
+    return redirect("/events");
+  }
+
+  if (userResponse.data.role !== UserRole.PHOTOGRAPHER && userResponse.data.role !== UserRole.ADMIN) {
+    console.error("Access denied: User does not have permission to create events.");
+    return redirect("/events");
+  }
+
+  return { user: userResponse.data };
+}
+
+export async function action({ request }) {
+  const formData = await request.target.formData();
+  const title = formData.get("title");
+  const date = formData.get("date");
+  const isPublic = formData.get("isPublic") === "true";
+  const addressName = formData.get("addressName");
+  const city = formData.get("city");
+  const state = formData.get("state");
+  const country = formData.get("country");
+  const pricePerPhoto = formData.get("pricePerPhoto");
+  const publishAt = formData.get("publishAt");
+  const unpublishAt = formData.get("unpublishAt");
+  const description = formData.get("description");
+
+  if (!title || !date || !isPublic || !addressName || !city || !state || !country || !pricePerPhoto || !publishAt || !description) {
+    console.error("Missing required fields for event creation.");
+    return { error: "Todos os campos são obrigatórios." }, { status: 400 };
+  }
+
+  const newEventResponse = await eventController.create({
+    title,
+    date,
+    isPublic,
+    addressName,
+    city,
+    state,
+    country,
+    pricePerPhoto: parseFloat(pricePerPhoto),
+    publishAt,
+    unpublishAt,
+    description,
+    userId: request.user.id
+  });
+
+  if (newEventResponse.error) {
+    console.error("Error creating event:", newEventResponse.message);
+    return { error: newEventResponse.message }, { status: 500 };
+  }
+
+  console.log("New event created:", newEventResponse);
+
+  return redirect("/events/" + newEvent.data.id);
+}
+
+export default function NewEventPage() {
+  const actionData = useActionData();
+  const { user } = useLoaderData();
+  const submit = useSubmit();
+
+  function handleSubmit(event) {
+    console.log("Form submitted:", event);
+    const formData = new FormData(event.target.form);
+    const date = formData.get("date");
+    const publishAt = formData.get("publishAt");
+    const unpublishAt = formData.get("unpublishAt");
+
+    // // Validar se a data de publicação é anterior à data do evento
+    // if (new Date(publishAt) < new Date(date)) {
+    //   alert("A data de publicação não pode ser anterior à data do evento.");
+    //   return;
+    // }
+
+    // // Validar se a data de despublicação é posterior à data de publicação
+    // if (unpublishAt && new Date(unpublishAt) <= new Date(publishAt)) {
+    //   alert("A data de despublicação deve ser posterior à data de publicação.");
+    //   return;
+    // }
+
+    submit({ target: event.target, user }, { method: "post" });
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Criar Novo Evento</h1>
+      {actionData?.error && (
+        <Alert color="failure" className="mb-4">
+          {actionData.error}
+        </Alert>
+      )}
+      <Form method="post" className="space-y-6">
+        <div>
+          <Label htmlFor="title" value="Título do Evento" />
+          <TextInput
+            id="title"
+            name="title"
+            type="text"
+            placeholder="Digite o título do evento"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="date" value="Data do Evento" />
+          <Datepicker
+            id="date"
+            name="date"
+            placeholder="Selecione a data do evento"
+            required
+            minDate={new Date().toISOString().split("T")[0]} // Não permite datas passadas
+            maxDate={new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split("T")[0]} // Permite até 1 ano no futuro
+            displayFormat="dd/mm/yyyy"
+          // onChange={(date) => {
+          //   const formattedDate = date.toISOString().split("T")[0];
+          //   document.getElementById("date").value = formattedDate;
+          // }}
+          />
+        </div>
+        <div>
+          <Label htmlFor="isPublic" value="Evento Público" />
+          <Select id="isPublic" name="isPublic" required>
+            <option value="">Selecione uma opção</option>
+            <option value="true">Sim</option>
+            <option value="false">Não</option>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="description" value="Descrição do Evento" />
+          <Textarea
+            id="description"
+            name="description"
+            placeholder="Digite uma descrição para o evento"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="addressName" value="Nome do Local" />
+          <TextInput
+            id="addressName"
+            name="addressName"
+            type="text"
+            placeholder="Digite o nome do local do evento"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="city" value="Cidade" />
+          <TextInput
+            id="city"
+            name="city"
+            type="text"
+            placeholder="Digite a cidade do evento"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="state" value="Localização" />
+          <Select id="state" name="state" required>
+            <option value="">Selecione o estado</option>
+            <option value="SC">Santa Catarina</option>
+            <option value="PR">Paraná</option>
+            <option value="RS">Rio Grande do Sul</option>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="Country" value="País" />
+          <TextInput
+            id="country"
+            name="country"
+            type="text"
+            placeholder="Digite o país do evento"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="pricePerPhoto" value="Preço por Foto" />
+          <TextInput
+            id="pricePerPhoto"
+            name="pricePerPhoto"
+            type="number"
+            placeholder="Digite o preço por foto"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="publishAt" value="Publicar em" />
+          <Datepicker
+            id="publishAt"
+            name="publishAt"
+            placeholder="Selecione a data de publicação"
+            required
+            minDate={new Date().toISOString().split("T")[0]} // Não permite datas passadas
+            maxDate={new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split("T")[0]} // Permite até 1 ano no futuro
+            displayFormat="dd/mm/yyyy"
+          // onChange={(date) => {
+          //   const formattedDate = date.toISOString().split("T")[0];
+          //   document.getElementById("publishAt").value = formattedDate;
+          // }}
+          />
+        </div>
+        <div>
+          <Label htmlFor="unpublishAt" value="Despublicar em" />
+          <Datepicker
+            id="unpublishAt"
+            name="unpublishAt"
+            placeholder="Selecione a data de despublicação"
+            minDate={new Date().toISOString().split("T")[0]} // Não permite datas passadas
+            maxDate={new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split("T")[0]} // Permite até 1 ano no futuro
+            displayFormat="dd/mm/yyyy"
+          // onChange={(date) => {
+          //   const formattedDate = date.toISOString().split("T")[0];
+          //   document.getElementById("unpublishAt").value = formattedDate;
+          // }}
+          />
+        </div>
+        <Button type="submit" className="w-full cursor-pointer" onClick={handleSubmit}>
+          Criar Evento
+        </Button>
+      </Form>
+    </div>
+  );
+}

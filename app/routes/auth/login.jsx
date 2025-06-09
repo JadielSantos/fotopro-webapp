@@ -34,7 +34,7 @@ export async function action({ request }) {
   const authCookie = await createAuthCookie(response.data.authToken);
 
   // Redirect to a protected route after login
-  return redirect("/dashboard", {
+  return redirect("/events", {
     headers: {
       "Set-Cookie": authCookie,
     },

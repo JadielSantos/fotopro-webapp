@@ -9,8 +9,10 @@ import {
 } from "react-router";
 import { Navbar, NavbarBrand, NavbarCollapse, NavbarLink, NavbarToggle } from "flowbite-react";
 import "../app.css";
-import logo from "../assets/logo_fotopro.png";
+import logo from "../assets/logo_fotopro_centered.png";
 import { getAuthToken } from "../utils/auth.server";
+import { userController } from "../controllers/user.controller";
+import { UserRole } from "../enums/user.enum";
 
 export async function loader({ request, params }) {
   const token = await getAuthToken(request);
@@ -34,7 +36,12 @@ export async function loader({ request, params }) {
   // Fetch additional user details if needed
   const userDetails = await userController.getById(user.id);
 
-  return { isLoggedIn: true, user: userDetails };
+  if (userDetails.error) {
+    console.error("Error fetching user details:", userDetails.message);
+    return { isLoggedIn: false };
+  }
+
+  return { isLoggedIn: true, user: userDetails?.data };
 }
 
 export default function Layout() {
@@ -59,13 +66,12 @@ export default function Layout() {
 function NavbarMenu() {
   const { user, isLoggedIn } = useLoaderData();
   const location = useLocation(); // Hook para obter o path atual
-
   const isActive = (path) => location.pathname === path; // Função para verificar se o path está ativo
 
   return (
-    <Navbar fluid={true} rounded={true} className="bg-blue-600 text-white">
+    <Navbar fluid={true} className="bg-primary-600 text-secondary-50">
       <NavbarBrand href="/">
-        <img src={logo} className="mr-3 h-6 sm:h-9" alt="Logo" />
+        <img src={logo} className="rounded-full mr-3 h-6 sm:h-9" alt="Logo" />
         <span className="self-center whitespace-nowrap text-xl font-semibold">
           FotoPro
         </span>
@@ -78,6 +84,9 @@ function NavbarMenu() {
         <NavbarLink href="/events" active={isActive("/events")}>
           Eventos
         </NavbarLink>
+        {(user?.role == UserRole.PHOTOGRAPHER || user?.role == UserRole.ADMIN) && <NavbarLink href="/events/new" active={isActive("/events/new")}>
+          Criar Evento
+        </NavbarLink>}
         {isLoggedIn ? (
           <NavbarLink href="/profile" active={isActive("/profile")}>
             Perfil
