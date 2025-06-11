@@ -18,7 +18,7 @@ export default function Register() {
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="text-center text-3xl font-extrabold text-gray-900">
           Cadastro de Cliente
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
@@ -27,7 +27,7 @@ export default function Register() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="bg-white py-2 px-4 shadow sm:rounded-lg sm:px-10">
           <RegisterForm redirectTo="/dashboard/client" />
         </div>
       </div>
@@ -97,8 +97,6 @@ function RegisterForm({ redirectTo }) {
 
   return (
     <Form className="flex max-w-md flex-col gap-4" onSubmit={handleSubmit}>
-      <h2 className="text-2xl font-bold mb-6 text-center">Cadastro</h2>
-
       {error && <Alert color="failure">{error}</Alert>}
 
       <div className="flex max-w-md flex-col gap-4">
@@ -110,7 +108,7 @@ function RegisterForm({ redirectTo }) {
             onClick={() => setRole(UserRole.PHOTOGRAPHER)}
             defaultChecked
           />
-          <Label htmlFor="photographer" className="text-gray-700">Fotógrafo</Label>
+          <Label htmlFor="photographer" color="dark">Fotógrafo</Label>
         </div>
 
         <div className="flex items-center gap-2">
@@ -120,12 +118,12 @@ function RegisterForm({ redirectTo }) {
             value="customer"
             onClick={() => setRole(UserRole.CUSTOMER)}
           />
-          <Label htmlFor="customer" className="text-gray-700">Cliente</Label>
+          <Label htmlFor="customer" color="dark">Cliente</Label>
         </div>
       </div>
 
       <div>
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email" color="dark">Email</Label>
         <TextInput
           id="email"
           type="email"
@@ -138,7 +136,7 @@ function RegisterForm({ redirectTo }) {
       </div>
 
       <div>
-        <Label htmlFor="name">Nome Completo</Label>
+        <Label htmlFor="name" color="dark">Nome Completo</Label>
         <TextInput
           id="name"
           type="text"
@@ -150,7 +148,7 @@ function RegisterForm({ redirectTo }) {
       </div>
 
       <div>
-        <Label htmlFor="phone">Celular</Label>
+        <Label htmlFor="phone" color="dark">Celular</Label>
         <TextInput
           id="phone"
           type="text"
@@ -161,7 +159,7 @@ function RegisterForm({ redirectTo }) {
       </div>
 
       <div>
-        <Label htmlFor="password">Senha</Label>
+        <Label htmlFor="password" color="dark">Senha</Label>
         <TextInput
           id="password"
           type="password"
@@ -173,7 +171,7 @@ function RegisterForm({ redirectTo }) {
       </div>
 
       <div>
-        <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+        <Label htmlFor="confirmPassword" color="dark">Confirmar Senha</Label>
         <TextInput
           id="confirmPassword"
           type="password"
@@ -187,7 +185,7 @@ function RegisterForm({ redirectTo }) {
       {role === UserRole.PHOTOGRAPHER && (
         <>
           <div>
-            <Label htmlFor="businessName">Nome do Negócio</Label>
+            <Label htmlFor="businessName" color="dark">Nome do Negócio</Label>
             <TextInput
               id="businessName"
               type="text"
@@ -198,7 +196,7 @@ function RegisterForm({ redirectTo }) {
           </div>
 
           <div>
-            <Label htmlFor="bio">Biografia</Label>
+            <Label htmlFor="bio" color="dark">Biografia</Label>
             <Textarea
               id="bio"
               value={bio}
@@ -208,7 +206,7 @@ function RegisterForm({ redirectTo }) {
           </div>
 
           <div>
-            <Label htmlFor="profileImageUrl">Imagem de Perfil</Label>
+            <Label htmlFor="profileImageUrl" color="dark">Imagem de Perfil</Label>
             <FileInput
               id="profileImageUrl"
               accept="image/*"
@@ -217,7 +215,7 @@ function RegisterForm({ redirectTo }) {
           </div>
 
           <div>
-            <Label htmlFor="coverImageUrl">Imagem de Capa</Label>
+            <Label htmlFor="coverImageUrl" color="dark">Imagem de Capa</Label>
             <FileInput
               id="coverImageUrl"
               accept="image/*"
@@ -229,7 +227,7 @@ function RegisterForm({ redirectTo }) {
           </div>
 
           <div>
-            <Label htmlFor="websiteUrl">Website</Label>
+            <Label htmlFor="websiteUrl" color="dark">Website</Label>
             <TextInput
               id="websiteUrl"
               type="text"
@@ -240,7 +238,7 @@ function RegisterForm({ redirectTo }) {
           </div>
 
           <div>
-            <Label htmlFor="instagramUsername">Instagram</Label>
+            <Label htmlFor="instagramUsername" color="dark">Instagram</Label>
             <TextInput
               id="instagramUsername"
               type="text"
@@ -251,7 +249,7 @@ function RegisterForm({ redirectTo }) {
           </div>
 
           <div>
-            <Label htmlFor="facebookUsername">Facebook</Label>
+            <Label htmlFor="facebookUsername" color="dark">Facebook</Label>
             <TextInput
               id="facebookUsername"
               type="text"
@@ -262,7 +260,7 @@ function RegisterForm({ redirectTo }) {
           </div>
 
           <div>
-            <Label htmlFor="xUsername">X (Twitter)</Label>
+            <Label htmlFor="xUsername" color="dark">X (Twitter)</Label>
             <TextInput
               id="xUsername"
               type="text"
@@ -280,7 +278,7 @@ function RegisterForm({ redirectTo }) {
           defaultChecked
           onChange={(e) => setAcceptTerms(e.target.checked)}
         />
-        <Label htmlFor="accept">
+        <Label htmlFor="accept" color="dark">
           Eu concordo com os{" "}
           <a href="#" className="text-cyan-600 hover:underline">
             termos e condições de uso
@@ -288,7 +286,7 @@ function RegisterForm({ redirectTo }) {
         </Label>
       </div>
 
-      <Button type="submit" disabled={isLoading || !acceptTerms}>
+      <Button type="submit" disabled={isLoading || !acceptTerms} className="cursor-pointer">
         {isLoading ? "Enviando..." : "Cadastrar"}
       </Button>
 

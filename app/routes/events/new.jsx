@@ -37,18 +37,19 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
-  const formData = await request.target.formData();
+  const formData = await request.formData();
   const title = formData.get("title");
-  const date = formData.get("date");
+  const date = new Date(formData.get("date")).toISOString();
   const isPublic = formData.get("isPublic") === "true";
   const addressName = formData.get("addressName");
   const city = formData.get("city");
   const state = formData.get("state");
   const country = formData.get("country");
   const pricePerPhoto = formData.get("pricePerPhoto");
-  const publishAt = formData.get("publishAt");
-  const unpublishAt = formData.get("unpublishAt");
+  const publishAt = new Date(formData.get("publishAt")).toISOString();
+  const unpublishAt = new Date(formData.get("unpublishAt")).toISOString() || null;
   const description = formData.get("description");
+  const userId = formData.get("userId");
 
   if (!title || !date || !isPublic || !addressName || !city || !state || !country || !pricePerPhoto || !publishAt || !description) {
     console.error("Missing required fields for event creation.");
@@ -67,7 +68,7 @@ export async function action({ request }) {
     publishAt,
     unpublishAt,
     description,
-    userId: request.user.id
+    userId
   });
 
   if (newEventResponse.error) {
@@ -77,7 +78,7 @@ export async function action({ request }) {
 
   console.log("New event created:", newEventResponse);
 
-  return redirect("/events/" + newEvent.data.id);
+  return redirect("/events/" + newEventResponse.data.id);
 }
 
 export default function NewEventPage() {
@@ -104,7 +105,7 @@ export default function NewEventPage() {
     //   return;
     // }
 
-    submit({ target: event.target, user }, { method: "post" });
+    submit(event.target, { method: "post" });
   }
 
   return (
@@ -117,7 +118,7 @@ export default function NewEventPage() {
       )}
       <Form method="post" className="space-y-6">
         <div>
-          <Label htmlFor="title" value="Título do Evento" />
+          <Label htmlFor="title" color="dark">Título do Evento</Label>
           <TextInput
             id="title"
             name="title"
@@ -127,7 +128,7 @@ export default function NewEventPage() {
           />
         </div>
         <div>
-          <Label htmlFor="date" value="Data do Evento" />
+          <Label htmlFor="date" color="dark">Data do Evento</Label>
           <Datepicker
             id="date"
             name="date"
@@ -143,7 +144,7 @@ export default function NewEventPage() {
           />
         </div>
         <div>
-          <Label htmlFor="isPublic" value="Evento Público" />
+          <Label htmlFor="isPublic" color="dark">Evento Público</Label>
           <Select id="isPublic" name="isPublic" required>
             <option value="">Selecione uma opção</option>
             <option value="true">Sim</option>
@@ -151,7 +152,7 @@ export default function NewEventPage() {
           </Select>
         </div>
         <div>
-          <Label htmlFor="description" value="Descrição do Evento" />
+          <Label htmlFor="description" color="dark">Descrição do Evento</Label>
           <Textarea
             id="description"
             name="description"
@@ -160,7 +161,7 @@ export default function NewEventPage() {
           />
         </div>
         <div>
-          <Label htmlFor="addressName" value="Nome do Local" />
+          <Label htmlFor="addressName" color="dark">Nome do Local</Label>
           <TextInput
             id="addressName"
             name="addressName"
@@ -170,7 +171,7 @@ export default function NewEventPage() {
           />
         </div>
         <div>
-          <Label htmlFor="city" value="Cidade" />
+          <Label htmlFor="city" color="dark">Cidade</Label>
           <TextInput
             id="city"
             name="city"
@@ -180,7 +181,7 @@ export default function NewEventPage() {
           />
         </div>
         <div>
-          <Label htmlFor="state" value="Localização" />
+          <Label htmlFor="state" color="dark">Estado</Label>
           <Select id="state" name="state" required>
             <option value="">Selecione o estado</option>
             <option value="SC">Santa Catarina</option>
@@ -189,7 +190,7 @@ export default function NewEventPage() {
           </Select>
         </div>
         <div>
-          <Label htmlFor="Country" value="País" />
+          <Label htmlFor="Country" color="dark">País</Label>
           <TextInput
             id="country"
             name="country"
@@ -199,7 +200,7 @@ export default function NewEventPage() {
           />
         </div>
         <div>
-          <Label htmlFor="pricePerPhoto" value="Preço por Foto" />
+          <Label htmlFor="pricePerPhoto" color="dark">Preço por Foto</Label>
           <TextInput
             id="pricePerPhoto"
             name="pricePerPhoto"
@@ -209,7 +210,7 @@ export default function NewEventPage() {
           />
         </div>
         <div>
-          <Label htmlFor="publishAt" value="Publicar em" />
+          <Label htmlFor="publishAt" color="dark">Publicar em</Label>
           <Datepicker
             id="publishAt"
             name="publishAt"
@@ -225,7 +226,7 @@ export default function NewEventPage() {
           />
         </div>
         <div>
-          <Label htmlFor="unpublishAt" value="Despublicar em" />
+          <Label htmlFor="unpublishAt" color="dark">Despublicar em</Label>
           <Datepicker
             id="unpublishAt"
             name="unpublishAt"
@@ -239,6 +240,7 @@ export default function NewEventPage() {
           // }}
           />
         </div>
+        <input type="hidden" name="userId" value={user.id} />
         <Button type="submit" className="w-full cursor-pointer" onClick={handleSubmit}>
           Criar Evento
         </Button>

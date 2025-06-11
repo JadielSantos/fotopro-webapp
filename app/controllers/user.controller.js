@@ -116,6 +116,8 @@ class UserController {
         user: {
           id: userData.id,
           email: userData.email,
+          role: userData.role,
+          name: userData.name,
         },
         authToken: token,
       };

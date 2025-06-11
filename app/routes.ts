@@ -10,8 +10,7 @@ export default [
   layout("./routes/layout.jsx", [
     index("./routes/_index.jsx"),
 
-    route("access/:accessHash", "./routes/access/$accessHash.jsx"),
-    route("access/access-denied", "./routes/access/access-denied.jsx"),
+    route("access-denied", "./routes/access-denied.jsx"),
     route("not-found", "./routes/not-found.jsx"),
     route("profile", "./routes/profile.jsx"),
 
@@ -24,15 +23,15 @@ export default [
       index("./routes/events/_index.jsx"),
       route("new", "./routes/events/new.jsx"),
       ...prefix(":eventId", [
-        index("./routes/events/$eventId.jsx"),
-        route("edit", "./routes/events/$eventId.edit.jsx"),
+        index("./routes/events/$eventId/_index.jsx"),
+        route("edit", "./routes/events/$eventId/edit.jsx"),
         ...prefix("photos", [
           index(
-            "./routes/events/photos/_index.jsx"
+            "./routes/events/$eventId/photos/_index.jsx"
           ),
           route(
             "face-filtered",
-            "./routes/events/photos/face-filtered.jsx"
+            "./routes/events/$eventId/photos/face-filtered.jsx"
           ),
         ]),
       ]),

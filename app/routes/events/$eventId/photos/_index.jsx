@@ -1,33 +1,31 @@
 import { useLoaderData } from "react-router";
 import { Card, Button } from "flowbite-react";
+import { eventController } from "../../../../controllers/event.controller";
 
 export async function loader({ params, request }) {
   const { eventId } = params;
-
-  // Simulação de dados do evento e fotos (substituir por lógica real no backend)
-  const event = {
-    id: eventId,
-    title: "Casamento dos Sonhos",
-    bannerImage: "/images/banner.jpg",
-  };
-
-  const photos = Array.from({ length: 300 }, (_, index) => ({
-    id: index + 1,
-    url: `/images/photo${index + 1}.jpg`,
-    display: true,
-  })).filter((photo) => photo.display);
-
-  const url = new URL(request.url);
-  const page = parseInt(url.searchParams.get("page") || "1", 10);
   const photosPerPage = 102;
-  const totalPages = Math.ceil(photos.length / photosPerPage);
-  const paginatedPhotos = photos.slice((page - 1) * photosPerPage, page * photosPerPage);
 
-  return { event, photos: paginatedPhotos, page, totalPages };
+  const eventResponse = await eventController.findById(eventId);
+  if (eventResponse?.error && eventResponse.status === 404) {
+    console.error("Event not found for ID:", eventId);
+    return redirect("/not-found");
+  } else if (eventResponse?.error) {
+    console.error("Error fetching event details:", eventResponse.message);
+    return redirect("/events");
+  }
+  const event = eventResponse.data;
+  const coverPhoto = event.photos?.find(photo => photo.isCover) || null;
+
+  const page = params.page ? parseInt(params.page, 10) : 1;
+  const totalPages = event.photos?.length ? Math.ceil(event.photos.length / photosPerPage) : 0;
+  const paginatedPhotos = event.photos?.length ? event.photos.slice((page - 1) * photosPerPage, page * photosPerPage) : [];
+
+  return { event, photos: paginatedPhotos, page, totalPages, coverPhoto };
 }
 
 export default function PhotosPage() {
-  const { event, photos, page, totalPages } = useLoaderData();
+  const { event, photos, page, totalPages, coverPhoto } = useLoaderData();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -37,7 +35,7 @@ export default function PhotosPage() {
       {/* Banner */}
       <div className="mb-8">
         <img
-          src={event.bannerImage}
+          src={coverPhoto}
           alt={`Banner for ${event.title}`}
           className="w-full h-64 object-cover rounded-lg shadow-md"
         />
@@ -63,12 +61,12 @@ export default function PhotosPage() {
         </span>
         <div className="flex space-x-4">
           {page > 1 && (
-            <Button href={`?page=${page - 1}`} color="light">
+            <Button href={`?page=${page - 1}`} color="light" className="cursor-pointer">
               Página Anterior
             </Button>
           )}
           {page < totalPages && (
-            <Button href={`?page=${page + 1}`} color="light">
+            <Button href={`?page=${page + 1}`} color="light" >
               Próxima Página
             </Button>
           )}

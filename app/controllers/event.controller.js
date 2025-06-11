@@ -29,6 +29,7 @@ class EventController {
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
+        include: { user: true },
       });
 
       return {
@@ -56,6 +57,7 @@ class EventController {
       const events = await eventModel.getByQuery({
         take: numberOfEvents,
         orderBy: { relevanceScore: "desc" },
+        include: { user: true },
       });
 
       return { status: 200, data: events };
@@ -72,7 +74,10 @@ class EventController {
    */
   async findById(id) {
     try {
-      const event = await eventModel.getById(id);
+      const event = await eventModel.getById(id, {
+        includeUser: true,
+        includePhotos: true,
+      });
       if (!event) {
         return { status: 404, message: "Evento não encontrado.", error: true };
       }

@@ -1,0 +1,169 @@
+import { redirect, useLoaderData, Form, useActionData } from "react-router";
+import { Label, TextInput, Textarea, Button, Card, FileInput, Alert, Datepicker, Select } from "flowbite-react";
+import { getAuthToken } from "../../../utils/auth.server";
+import { userController } from "../../../controllers/user.controller";
+import { UserRole } from "../../../enums/user.enum";
+import { eventController } from "../../../controllers/event.controller";
+
+export async function loader({ request, params }) {
+  const token = await getAuthToken(request);
+  var userResponse = null;
+
+  if (token) {
+    const validationResponse = await userController.validateToken(token);
+
+    if (!validationResponse.error) {
+      const loginData = validationResponse.data;
+
+      // Fetch additional user details if needed
+      userResponse = await userController.getById(loginData.id);
+
+      if (userResponse.error) {
+        console.error("Error fetching user details:", userResponse.message);
+        return redirect("/events");
+      }
+    } else {
+      console.error("Token validation failed:", validationResponse.message);
+      return redirect("/events");
+    }
+  } else {
+    console.error("No authentication token found.");
+    return redirect("/auth/login");
+  }
+
+  const eventResponse = await eventController.findById(params.eventId);
+
+  if (eventResponse?.error && eventResponse.status === 404) {
+    console.error("Event not found for ID:", params.eventId);
+    return redirect("/not-found");
+  } else if (eventResponse?.error) {
+    console.error("Error fetching event details:", eventResponse.message);
+    return redirect("/events");
+  }
+
+  if (userResponse.data.id !== eventResponse.data.userId && userResponse.data.role !== UserRole.ADMIN) {
+    console.error("Access denied: User does not have permission to edit this event.");
+    return redirect("/events");
+  }
+
+  return { user: userResponse.data, event: eventResponse.data };
+}
+
+export async function action({ request, params }) {
+  const formData = {
+    ...Object.fromEntries(await request.formData())
+  };
+
+  // Formatando dados do formulário
+  formData.title = formData.title.trim();
+  formData.date = formData.date ? new Date(formData.date).toISOString() : null;
+  formData.city = formData.city?.trim();
+  formData.state = formData.state?.trim();
+  formData.description = formData.description?.trim();
+
+  const updateResponse = await eventController.update(params.eventId, formData);
+
+  return redirect(`/events/${params.eventId}`);
+}
+
+export default function EditEventPage() {
+  const { event } = useLoaderData();
+  const actionData = useActionData();
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">Editar Evento</h1>
+
+      {/* Formulário de edição do evento */}
+      <Card className="mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-secondary-100">Dados do Evento</h2>
+        {actionData?.error && (
+          <Alert color="failure" className="mb-4">
+            {actionData.error}
+          </Alert>
+        )}
+        <Form method="post" className="space-y-4">
+          <div>
+            <Label htmlFor="title">Título do Evento</Label>
+            <TextInput
+              id="title"
+              name="title"
+              type="text"
+              defaultValue={event.title}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="date">Data do Evento</Label>
+            <Datepicker
+              id="date"
+              name="date"
+              selected={new Date(event.date)}
+              onChange={(date) => date}
+              dateFormat="dd/MM/yyyy"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="city">Cidade</Label>
+            <TextInput
+              id="city"
+              name="city"
+              type="text"
+              defaultValue={event.city}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="state">Estado</Label>
+            <Select id="state" name="state" defaultValue={event.state} required>
+              <option value="PR">Paraná</option>
+              <option value="SC">Santa Catarina</option>
+              <option value="RS">Rio Grande do Sul</option>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="description">Descrição do Evento</Label>
+            <Textarea
+              id="description"
+              name="description"
+              defaultValue={event.description}
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full cursor-pointer">
+            Atualizar Evento
+          </Button>
+        </Form>
+      </Card>
+
+      {/* Listagem de fotos */}
+      {event.photos?.length ? (
+        <Card>
+          <h2 className="text-xl font-semibold mb-4 text-secondary-100">Fotos do Evento</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {event.photos?.map((photo) => (
+              <Card key={photo.id} className="rounded-lg shadow-md">
+                <img
+                  src={photo.url}
+                  alt={`Photo ${photo.id}`}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+                <Form method="post" encType="multipart/form-data" className="mt-2">
+                  <Label htmlFor={`photo-${photo.id}`}>Atualizar Foto</Label>
+                  <FileInput id={`photo-${photo.id}`} name={`photo-${photo.id}`} />
+                  <Button type="submit" color="light" className="mt-2 w-full cursor-pointer">
+                    Atualizar
+                  </Button>
+                </Form>
+              </Card>
+            ))}
+          </div>
+        </Card>) : (
+        <Alert color="info" className="mt-4">
+          Este evento ainda não possui fotos.
+        </Alert>
+      )}
+    </div>
+  );
+}

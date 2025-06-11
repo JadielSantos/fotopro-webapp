@@ -1,16 +1,21 @@
-import { useLoaderData, useActionData, Form } from "react-router";
+import { useLoaderData, useActionData, Form, redirect } from "react-router";
 import { Card, Button, Label, FileInput, Alert } from "flowbite-react";
+import { eventController } from "../../../../controllers/event.controller";
 
 export async function loader({ params }) {
   const { eventId } = params;
 
-  // Simulação de dados do evento (substituir por lógica real no backend)
-  const event = {
-    id: eventId,
-    title: "Casamento dos Sonhos",
-  };
+  const eventResponse = await eventController.findById(eventId);
 
-  return { event };
+  if (eventResponse?.error && eventResponse.status === 404) {
+    console.error("Evento não encontrado para o ID:", eventId);
+    return redirect("/not-found");
+  } else if (eventResponse?.error) {
+    console.error("Erro ao buscar detalhes do evento:", eventResponse.message);
+    return redirect("/events");
+  }
+
+  return { event: eventResponse.data };
 }
 
 export async function action({ request, params }) {
@@ -45,7 +50,7 @@ export default function FaceFilteredPage() {
 
       {/* Formulário de upload */}
       <Card className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Envie uma selfie para filtrar as fotos</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-100">Envie uma selfie para filtrar as fotos</h2>
         {actionData?.error && (
           <Alert color="failure" className="mb-4">
             {actionData.error}
@@ -53,17 +58,17 @@ export default function FaceFilteredPage() {
         )}
         <Form method="post" encType="multipart/form-data" className="space-y-4">
           <div>
-            <Label htmlFor="selfie" value="Selecione uma foto" />
+            <Label htmlFor="selfie">Selecione uma foto</Label>
             <FileInput id="selfie" name="selfie" required />
           </div>
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full cursor-pointer">
             Filtrar Fotos
           </Button>
         </Form>
       </Card>
 
       {/* Lista de fotos filtradas */}
-      {actionData?.photos && (
+      {actionData?.photos?.length && (
         <div>
           <h2 className="text-xl font-semibold mb-4">Fotos Filtradas</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

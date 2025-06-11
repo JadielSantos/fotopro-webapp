@@ -25,12 +25,16 @@ class Event {
   }
 
   // Get a single event by ID
-  async getById(id) {
+  async getById(id, { includeUser = false , includePhotos = false } = {}) {
     try {
       if (!id) throw new Error("Invalid ID provided for event retrieval.");
 
       return await prisma.event.findUnique({
         where: { id },
+        include: {
+          user: includeUser,
+          photos: includePhotos,
+        }
       });
     } catch (error) {
       throw new Error(error);
@@ -42,9 +46,7 @@ class Event {
       if (!query || typeof query !== "object")
         throw new Error("Invalid query provided for event retrieval.");
 
-      return await prisma.event.findMany({
-        where: query,
-      });
+      return await prisma.event.findMany(query);
     } catch (error) {
       throw new Error(error);
     }

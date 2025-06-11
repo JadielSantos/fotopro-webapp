@@ -54,7 +54,7 @@ export default function Login() {
       )}
       <form method="post" className="space-y-4">
         <div>
-          <Label htmlFor="email" value="Email" />
+          <Label htmlFor="email" color="dark">Email</Label>
           <TextInput
             id="email"
             name="email"
@@ -64,7 +64,7 @@ export default function Login() {
           />
         </div>
         <div>
-          <Label htmlFor="password" value="Senha" />
+          <Label htmlFor="password" color="dark">Senha</Label>
           <TextInput
             id="password"
             name="password"
@@ -73,7 +73,7 @@ export default function Login() {
             required
           />
         </div>
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full cursor-pointer">
           Entrar
         </Button>
       </form>

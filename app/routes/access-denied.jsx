@@ -39,14 +39,11 @@ export default function AccessDeniedPage() {
         <Card>
           <p className="mb-4 text-center">Você pode tentar:</p>
           <div className="space-y-2">
-            <Button href="/" color="blue" className="w-full">
+            <Button href="/events" color="blue" className="w-full cursor-pointer">
               Voltar para a página inicial
             </Button>
-            <Button href="/login/photographer" color="light" className="w-full">
-              Login como Fotógrafo
-            </Button>
-            <Button href="/login/client" color="light" className="w-full">
-              Login como Cliente
+            <Button href="/auth/login" color="light" className="w-full cursor-pointer">
+              Fazer login novamente
             </Button>
           </div>
         </Card>
