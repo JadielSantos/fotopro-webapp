@@ -43,7 +43,6 @@ export async function loader({ request, params }) {
 
 export default function EventPage() {
   const { event, user } = useLoaderData();
-  console.log(user);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -76,18 +75,18 @@ export default function EventPage() {
 
         {/* Nome do fotógrafo */}
         <p className="text-lg text-secondary-200 mb-4">
-          Fotógrafo: <span className="font-semibold">{event.photographer}</span>
+          Fotógrafo: <span className="font-semibold">{event.user.name}</span>
         </p>
 
         {/* Total de fotos */}
         <p className="text-lg text-secondary-200 mb-4">
-          Total de fotos: <span className="font-semibold">{event.totalPhotos}</span>
+          Total de fotos: <span className="font-semibold">{event.photos?.length}</span>
         </p>
 
         {/* Cover photo */}
         <div className="mb-6">
           <img
-            src={event.coverPhoto}
+            src={event.photos?.find(photo => photo.isCover)?.url + "&sz=w800"}
             alt={`Cover photo of ${event.title}`}
             className="w-full h-64 object-cover rounded-lg shadow-md"
           />

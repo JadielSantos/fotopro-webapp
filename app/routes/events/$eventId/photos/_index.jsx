@@ -1,6 +1,7 @@
 import { useLoaderData } from "react-router";
 import { Card, Button } from "flowbite-react";
 import { eventController } from "../../../../controllers/event.controller";
+import { FiArrowLeft } from "react-icons/fi";
 
 export async function loader({ params, request }) {
   const { eventId } = params;
@@ -15,30 +16,28 @@ export async function loader({ params, request }) {
     return redirect("/events");
   }
   const event = eventResponse.data;
-  const coverPhoto = event.photos?.find(photo => photo.isCover) || null;
 
   const page = params.page ? parseInt(params.page, 10) : 1;
   const totalPages = event.photos?.length ? Math.ceil(event.photos.length / photosPerPage) : 0;
   const paginatedPhotos = event.photos?.length ? event.photos.slice((page - 1) * photosPerPage, page * photosPerPage) : [];
 
-  return { event, photos: paginatedPhotos, page, totalPages, coverPhoto };
+  return { event, photos: paginatedPhotos, page, totalPages };
 }
 
 export default function PhotosPage() {
-  const { event, photos, page, totalPages, coverPhoto } = useLoaderData();
+  const { event, photos, page, totalPages } = useLoaderData();
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Título do evento */}
-      <h1 className="text-3xl font-bold mb-6">{event.title}</h1>
+      <div className="flex justify-between items-center mb-4 md:mb-6">
+        {/* Título do evento */}
+        <h1 className="text-3xl font-bold">{event.title}</h1>
 
-      {/* Banner */}
-      <div className="mb-8">
-        <img
-          src={coverPhoto}
-          alt={`Banner for ${event.title}`}
-          className="w-full h-64 object-cover rounded-lg shadow-md"
-        />
+        {/* Voltar para o evento */}
+        <Button href={`/events/${event.id}`} color="transparent">
+          <FiArrowLeft className="mr-2" />
+          Voltar
+        </Button>
       </div>
 
       {/* Lista de fotos */}
@@ -46,7 +45,7 @@ export default function PhotosPage() {
         {photos.map((photo) => (
           <Card key={photo.id} className="rounded-lg shadow-md">
             <img
-              src={photo.url}
+              src={photo.url + "&sz=w600"}
               alt={`Photo ${photo.id}`}
               className="w-full h-48 object-cover rounded-lg"
             />

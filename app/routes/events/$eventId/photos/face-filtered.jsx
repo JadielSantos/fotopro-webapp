@@ -1,6 +1,13 @@
 import { useLoaderData, useActionData, Form, redirect } from "react-router";
 import { Card, Button, Label, FileInput, Alert } from "flowbite-react";
 import { eventController } from "../../../../controllers/event.controller";
+import { FiArrowLeft } from "react-icons/fi";
+import { LocalFileStorage } from "@mjackson/file-storage/local";
+import { parseFormData } from "@mjackson/form-data-parser";
+import { clearDirectory, deleteTempFile, writeFileToTemp } from "../../../../utils/util";
+
+const tmpUploadsDir = "./tmp_uploads";
+const storage = new LocalFileStorage(tmpUploadsDir);
 
 export async function loader({ params }) {
   const { eventId } = params;
@@ -20,23 +27,36 @@ export async function loader({ params }) {
 
 export async function action({ request, params }) {
   const { eventId } = params;
-  const formData = await request.formData();
-  const file = formData.get("selfie");
+  var keyRef = "";
 
-  if (!file) {
-    return { error: "Por favor, envie uma foto para realizar o filtro." };
-  }
+  const uploadHandler = async (fileUpload) => {
+    if (fileUpload.fieldName === "selfie" && fileUpload.name) {
+      const key = `${params.eventId}-${Date.now()}-${fileUpload.name}`;
+      await storage.set(key, fileUpload);
+      keyRef = key;
+      return storage.get(key);
+    }
+    return undefined;
+  };
 
-  // Simulação de chamada ao algoritmo Python para filtrar fotos
-  // Substituir por lógica real que chama o backend Python
-  const filteredPhotoIds = [1, 2, 3, 4, 5]; // IDs retornados pelo algoritmo Python
+  const formData = await parseFormData(request, uploadHandler);
+  const files = formData.getAll("selfie");
 
-  const photos = filteredPhotoIds.map((id) => ({
-    id,
-    url: `/images/photo${id}.jpg`,
-  }));
+  if (!files?.length) return { error: "Nenhuma foto enviada. Por favor, selecione uma selfie." };
 
-  return { photos };
+  const selfieFile = files[0];
+
+  if (!selfieFile || !selfieFile.name) return { error: "Arquivo inválido. Por favor, envie uma selfie válida." };
+
+  const selfiePath = await writeFileToTemp(selfieFile, "fotopro/" + eventId + "/selfies");
+
+  console.log("CREATED", selfiePath);
+
+  deleteTempFile(selfiePath);
+  storage.remove(keyRef);
+  clearDirectory(tmpUploadsDir);
+
+  return;
 }
 
 export default function FaceFilteredPage() {
@@ -46,7 +66,16 @@ export default function FaceFilteredPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Título do evento */}
-      <h1 className="text-3xl font-bold mb-6">{event.title} - Filtrar por Face</h1>
+      <div className="flex justify-between items-center mb-4 md:mb-6">
+        {/* Título do evento */}
+        <h1 className="text-3xl font-bold">{event.title}</h1>
+
+        {/* Voltar para o evento */}
+        <Button href={`/events/${event.id}`} color="transparent">
+          <FiArrowLeft className="mr-2" />
+          Voltar
+        </Button>
+      </div>
 
       {/* Formulário de upload */}
       <Card className="mb-8">
@@ -59,7 +88,7 @@ export default function FaceFilteredPage() {
         <Form method="post" encType="multipart/form-data" className="space-y-4">
           <div>
             <Label htmlFor="selfie">Selecione uma foto</Label>
-            <FileInput id="selfie" name="selfie" required />
+            <FileInput id="selfie" name="selfie" required max="1" />
           </div>
           <Button type="submit" className="w-full cursor-pointer">
             Filtrar Fotos
@@ -75,7 +104,7 @@ export default function FaceFilteredPage() {
             {actionData.photos.map((photo) => (
               <Card key={photo.id} className="rounded-lg shadow-md">
                 <img
-                  src={photo.url}
+                  src={photo.url + "&sz=w600"}
                   alt={`Photo ${photo.id}`}
                   className="w-full h-48 object-cover rounded-lg"
                 />

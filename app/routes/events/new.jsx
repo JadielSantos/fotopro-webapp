@@ -76,9 +76,7 @@ export async function action({ request }) {
     return { error: newEventResponse.message }, { status: 500 };
   }
 
-  console.log("New event created:", newEventResponse);
-
-  return redirect("/events/" + newEventResponse.data.id);
+  return redirect("/events/" + newEventResponse.data.id + "/edit");
 }
 
 export default function NewEventPage() {
@@ -87,7 +85,6 @@ export default function NewEventPage() {
   const submit = useSubmit();
 
   function handleSubmit(event) {
-    console.log("Form submitted:", event);
     const formData = new FormData(event.target.form);
     const date = formData.get("date");
     const publishAt = formData.get("publishAt");
@@ -241,6 +238,9 @@ export default function NewEventPage() {
           />
         </div>
         <input type="hidden" name="userId" value={user.id} />
+        <Alert color="warning" className="mb-4">
+          <p>Avance para a próxima etapa para adicionar fotos ao evento.</p>
+        </Alert>
         <Button type="submit" className="w-full cursor-pointer" onClick={handleSubmit}>
           Criar Evento
         </Button>

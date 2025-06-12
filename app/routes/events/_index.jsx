@@ -23,7 +23,7 @@ export default function EventsPage() {
         {eventsRelevant?.map((event) => (
           <div key={event.id} className="relative h-full">
             <img
-              src={event.image}
+              src={event.photos?.find(photo => photo.isCover)?.url + "&sz=w800"}
               alt={event.title}
               className="object-cover w-full h-full"
             />
@@ -94,7 +94,7 @@ export default function EventsPage() {
                 {/* Imagem do evento */}
                 <div className="h-60 overflow-hidden rounded-t-lg">
                   <img
-                    src={event.image}
+                    src={event.photos?.find(photo => photo.isCover)?.url + "&sz=w600"}
                     alt={event.title}
                     className="w-full h-full object-cover"
                   />

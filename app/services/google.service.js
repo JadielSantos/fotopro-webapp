@@ -1,97 +1,80 @@
-import fs from 'fs/promises';
-import path from 'path';
-import process from 'process';
-import { authenticate } from '@google-cloud/local-auth';
 import { google } from "googleapis";
+import { Readable } from "stream";
 
-// If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly'];
-// The file token.json stores the user's access and refresh tokens, and is
-// created automatically when the authorization flow completes for the first
-// time.
-const TOKEN_PATH = path.join(process.cwd(), 'token.json');
-const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
+const SCOPES = ["https://www.googleapis.com/auth/drive"];
 
-/**
- * Reads previously authorized credentials from the save file.
- *
- * @return {Promise<OAuth2Client|null>}
- */
-async function loadSavedCredentialsIfExist() {
-  try {
-    const content = await fs.readFile(TOKEN_PATH);
-    const credentials = JSON.parse(content);
-    return google.auth.fromJSON(credentials);
-  } catch (err) {
-    return null;
+// TEST
+const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
+const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY.split(String.raw`\n`).join('\n');
+
+class GoogleService {
+  /**
+   * Load or request or authorization to call APIs.
+   *
+   */
+  async authorize() {
+    try {
+      const auth = new google.auth.JWT(
+        CLIENT_EMAIL,
+        null,
+        PRIVATE_KEY,
+        SCOPES
+      );
+      await auth.authorize();
+
+      return auth;
+    } catch (error) {
+      throw new Error(`Error authorizing Google Drive API: ${error.message}`);
+    }
+  }
+
+  /**
+   * Faz o upload de um arquivo para o Google Drive.
+   * @param filePath Caminho local do arquivo
+   * @param fileName Nome desejado no Drive
+   * @param folderId (opcional) ID da pasta no Drive
+   */
+  async uploadFile(
+    auth,
+    file,
+    fileName,
+    folderId = "1kYWsDON3txUv5ABOiohAacqxvdTESYpj"
+  ) {
+    const drive = google.drive({ version: 'v3', auth });
+    const fileMetadata = { name: fileName };
+    if (folderId) {
+      fileMetadata.parents = [folderId];
+    }
+
+    const media = {
+      mimeType: fileName.endsWith(".png")
+        ? "image/png"
+        : fileName.endsWith(".jpg")
+        ? "image/jpeg"
+        : "application/octet-stream",
+      body: Readable.from(Buffer.from(await file.arrayBuffer())),
+    };
+
+    const res = await drive.files.create({
+      requestBody: fileMetadata,
+      media,
+      fields: "id, thumbnailLink",
+    });
+
+    return {
+      fileId: res.data.id,
+      fileName: fileName,
+      url: `https://drive.google.com/thumbnail?id=${res.data.id}`,
+      thumbnailLink: res.data.thumbnailLink,
+    }
   }
 }
 
-/**
- * Serializes credentials to a file compatible with GoogleAuth.fromJSON.
- *
- * @param {OAuth2Client} client
- * @return {Promise<void>}
- */
-async function saveCredentials(client) {
-  const content = await fs.readFile(CREDENTIALS_PATH);
-  const keys = JSON.parse(content);
-  const key = keys.installed || keys.web;
-  const payload = JSON.stringify({
-    type: 'authorized_user',
-    client_id: key.client_id,
-    client_secret: key.client_secret,
-    refresh_token: client.credentials.refresh_token,
-  });
-  await fs.writeFile(TOKEN_PATH, payload);
-}
+export const googleService = new GoogleService();
 
-/**
- * Load or request or authorization to call APIs.
- *
- */
-async function authorize() {
-  let client = await loadSavedCredentialsIfExist();
-  if (client) {
-    return client;
-  }
-  client = await authenticate({
-    scopes: SCOPES,
-    keyfilePath: CREDENTIALS_PATH,
-  });
-  if (client.credentials) {
-    await saveCredentials(client);
-  }
-  return client;
-}
+// const authClient = await authorize();
 
-/**
- * Faz o upload de um arquivo para o Google Drive.
- * @param filePath Caminho local do arquivo
- * @param fileName Nome desejado no Drive
- * @param folderId (opcional) ID da pasta no Drive
- */
-export async function uploadFile(
-  filePath,
-  fileName,
-  folderId = null
-) {
-  const drive = authorize();
-  const fileMetadata = { name: fileName };
-  if (folderId) {
-    fileMetadata.parents = [folderId];
-  }
+// // List available files
+// const uploadedFile = await uploadFile(authClient, 'logo_fotopro_centered.png', "event-1-test.png", '1kYWsDON3txUv5ABOiohAacqxvdTESYpj');
 
-  const media = {
-    mimeType: filePath.endsWith(".png") ? "image/png" : filePath.endsWith(".jpg") ? "image/jpeg" : "application/octet-stream",
-    body: fs.createReadStream(filePath),
-  };
-
-  const res = await drive.files.create({
-    requestBody: fileMetadata,
-    media,
-    fields: "id, webContentLink, webViewLink",
-  });
-
-  return res.data;
-}
+// https://drive.google.com/thumbnail?id=FILEID

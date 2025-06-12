@@ -13,6 +13,8 @@
   "dependencies": {
     "@google-cloud/local-auth": "^2.1.0",
     "@heroicons/react": "^2.2.0",
+    "@mjackson/file-storage": "^0.7.0",
+    "@mjackson/form-data-parser": "^0.8.0",
     "@prisma/client": "^6.8.2",
     "@react-router/node": "^7.5.3",
     "@react-router/serve": "^7.5.3",

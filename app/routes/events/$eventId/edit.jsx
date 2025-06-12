@@ -1,9 +1,30 @@
-import { redirect, useLoaderData, Form, useActionData } from "react-router";
-import { Label, TextInput, Textarea, Button, Card, FileInput, Alert, Datepicker, Select } from "flowbite-react";
+import { useState } from "react";
+import { redirect, useLoaderData, Form, useActionData, useNavigation } from "react-router";
+import { parseFormData } from "@mjackson/form-data-parser";
+import { LocalFileStorage } from "@mjackson/file-storage/local";
+import {
+  Label,
+  TextInput,
+  Textarea,
+  Button,
+  Card,
+  FileInput,
+  Alert,
+  Datepicker,
+  Select,
+  Spinner,
+} from "flowbite-react";
 import { getAuthToken } from "../../../utils/auth.server";
 import { userController } from "../../../controllers/user.controller";
 import { UserRole } from "../../../enums/user.enum";
 import { eventController } from "../../../controllers/event.controller";
+import { photoController } from "../../../controllers/photo.controller";
+import fs from "fs";
+import path from "path";
+import { clearDirectory } from "../../../utils/util";
+
+const tmpUploadsDir = "./tmp_uploads";
+const storage = new LocalFileStorage(tmpUploadsDir);
 
 export async function loader({ request, params }) {
   const token = await getAuthToken(request);
@@ -41,7 +62,10 @@ export async function loader({ request, params }) {
     return redirect("/events");
   }
 
-  if (userResponse.data.id !== eventResponse.data.userId && userResponse.data.role !== UserRole.ADMIN) {
+  if (
+    userResponse.data.id !== eventResponse.data.userId &&
+    userResponse.data.role !== UserRole.ADMIN
+  ) {
     console.error("Access denied: User does not have permission to edit this event.");
     return redirect("/events");
   }
@@ -50,18 +74,49 @@ export async function loader({ request, params }) {
 }
 
 export async function action({ request, params }) {
-  const formData = {
-    ...Object.fromEntries(await request.formData())
+  const keys = [];
+  const uploadHandler = async (fileUpload) => {
+    if (fileUpload.fieldName === "photos" && fileUpload.name) {
+      const key = `${params.eventId}-${Date.now()}-${fileUpload.name}`;
+      await storage.set(key, fileUpload);
+      keys.push(key);
+      return storage.get(key);
+    }
+    return undefined;
   };
 
-  // Formatando dados do formulário
-  formData.title = formData.title.trim();
-  formData.date = formData.date ? new Date(formData.date).toISOString() : null;
-  formData.city = formData.city?.trim();
-  formData.state = formData.state?.trim();
-  formData.description = formData.description?.trim();
+  const formData = await parseFormData(request, uploadHandler);
+  const files = formData.getAll("photos");
 
-  const updateResponse = await eventController.update(params.eventId, formData);
+  if (files?.length) {
+    const uploadResponse = await photoController.uploadPhotos(files, params.eventId);
+
+    if (uploadResponse.error) {
+      return { error: uploadResponse.message };
+    }
+
+    keys.forEach((key) => {
+      storage.remove(key);
+    });
+
+    clearDirectory(tmpUploadsDir);
+
+    return redirect(`/events/${params.eventId}/photos`);
+  }
+
+  const formDataObj = {
+    ...Object.fromEntries(formData)
+  };
+
+  // Format fields
+  formDataObj.date = formDataObj.date ? new Date(formDataObj.date).toISOString() : null;
+
+  const updateResponse = await eventController.update(params.eventId, formDataObj);
+
+  if (updateResponse.error) {
+    console.error("Error updating event:", updateResponse.message);
+    return { error: updateResponse.message };
+  }
 
   return redirect(`/events/${params.eventId}`);
 }
@@ -69,6 +124,13 @@ export async function action({ request, params }) {
 export default function EditEventPage() {
   const { event } = useLoaderData();
   const actionData = useActionData();
+  const navigation = useNavigation();
+  const [selectedFiles, setSelectedFiles] = useState([]);
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedFiles(files);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -82,7 +144,7 @@ export default function EditEventPage() {
             {actionData.error}
           </Alert>
         )}
-        <Form method="post" className="space-y-4">
+        <Form method="post" encType="multipart/form-data" className="space-y-4">
           <div>
             <Label htmlFor="title">Título do Evento</Label>
             <TextInput
@@ -137,6 +199,43 @@ export default function EditEventPage() {
         </Form>
       </Card>
 
+      {/* Upload de fotos */}
+      <Card className="mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-secondary-100">Adicionar Fotos</h2>
+        <Form method="post" encType="multipart/form-data" className="space-y-4">
+          <div>
+            <Label htmlFor="photos">Selecionar Fotos</Label>
+            <FileInput
+              id="photos"
+              name="photos"
+              multiple
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+          </div>
+          <input type="hidden" name="photoCount" value={selectedFiles.length} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {selectedFiles.map((file, index) => (
+              <img
+                key={index}
+                src={URL.createObjectURL(file)}
+                alt={`Preview ${index}`}
+                className="w-full h-32 object-cover rounded-lg shadow-md"
+              />
+            ))}
+          </div>
+          <Button type="submit" className="w-full cursor-pointer">
+            {navigation.state == "loading" || navigation.state == "submitting" ?
+              <>
+                <Spinner aria-label="Loading..." size="sm" className={navigation.state === "submitting" ? "inline-block mr-2" : "hidden"} />
+                <span className="pl-3">Enviando...</span>
+              </> :
+              <span className="pl-3">Enviar Fotos</span>
+            }
+          </Button>
+        </Form>
+      </Card>
+
       {/* Listagem de fotos */}
       {event.photos?.length ? (
         <Card>
@@ -159,7 +258,8 @@ export default function EditEventPage() {
               </Card>
             ))}
           </div>
-        </Card>) : (
+        </Card>
+      ) : (
         <Alert color="info" className="mt-4">
           Este evento ainda não possui fotos.
         </Alert>

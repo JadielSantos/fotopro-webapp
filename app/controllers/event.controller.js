@@ -29,7 +29,7 @@ class EventController {
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
-        include: { user: true },
+        include: { user: true, photos: true },
       });
 
       return {
@@ -57,7 +57,7 @@ class EventController {
       const events = await eventModel.getByQuery({
         take: numberOfEvents,
         orderBy: { relevanceScore: "desc" },
-        include: { user: true },
+        include: { user: true, photos: true },
       });
 
       return { status: 200, data: events };
