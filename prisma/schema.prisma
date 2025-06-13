@@ -99,6 +99,8 @@ model Event {
 model Photo {
   id          String   @id @default(cuid())
   url         String
+  fileName    String?
+  fileId      String?
   altText     String?
   display     Boolean  @default(true)
   isCover     Boolean  @default(false)

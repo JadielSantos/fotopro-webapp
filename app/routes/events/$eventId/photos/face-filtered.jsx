@@ -1,10 +1,11 @@
-import { useLoaderData, useActionData, Form, redirect } from "react-router";
-import { Card, Button, Label, FileInput, Alert } from "flowbite-react";
+import { useLoaderData, useActionData, Form, redirect, useNavigation } from "react-router";
+import { Card, Button, Label, FileInput, Alert, Spinner } from "flowbite-react";
 import { eventController } from "../../../../controllers/event.controller";
 import { FiArrowLeft } from "react-icons/fi";
 import { LocalFileStorage } from "@mjackson/file-storage/local";
 import { parseFormData } from "@mjackson/form-data-parser";
-import { clearDirectory, deleteTempFile, writeFileToTemp } from "../../../../utils/util";
+import { clearDirectory, deleteDirectory } from "../../../../utils/util";
+import { photoController } from "../../../../controllers/photo.controller";
 
 const tmpUploadsDir = "./tmp_uploads";
 const storage = new LocalFileStorage(tmpUploadsDir);
@@ -44,24 +45,55 @@ export async function action({ request, params }) {
 
   if (!files?.length) return { error: "Nenhuma foto enviada. Por favor, selecione uma selfie." };
 
-  const selfieFile = files[0];
+  const selfieResponse = await photoController.handleSelfieSubmit(eventId, files[0]);
 
-  if (!selfieFile || !selfieFile.name) return { error: "Arquivo inválido. Por favor, envie uma selfie válida." };
+  if (selfieResponse?.error) return { error: selfieResponse.message };
 
-  const selfiePath = await writeFileToTemp(selfieFile, "fotopro/" + eventId + "/selfies");
+  const responsePython = await fetch("http://127.0.0.1:5000/api/filter-photos", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      selfiePath: selfieResponse.data.selfiePath.replace(/\\/g, "\\\\"),
+    }),
+  });
 
-  console.log("CREATED", selfiePath);
+  if (!responsePython.ok) {
+    return {
+      error: "Erro ao filtrar fotos. Por favor, tente novamente mais tarde.",
+    };
+  }
 
-  deleteTempFile(selfiePath);
+  const responseObj = await responsePython.json();
+
+  if (!responseObj.filteredImages?.length) {
+    return {
+      error: "Nenhuma foto relacionada à selfie foi encontrada. Por favor, tente novamente com uma selfie diferente.",
+    };
+  }
+
+  const filteredPhotos = await photoController.getByQuery({
+    where: {
+      fileName: {
+        in: responseObj.filteredImages.map((file) => file.name),
+      },
+    },
+  });
+
+  deleteDirectory(selfieResponse.data.selfiePath.split(`\selfie`)[0]);
   storage.remove(keyRef);
   clearDirectory(tmpUploadsDir);
 
-  return;
+  return {
+    filteredPhotos: filteredPhotos.data
+  };
 }
 
 export default function FaceFilteredPage() {
   const { event } = useLoaderData();
   const actionData = useActionData();
+  const navigation = useNavigation();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -91,17 +123,23 @@ export default function FaceFilteredPage() {
             <FileInput id="selfie" name="selfie" required max="1" />
           </div>
           <Button type="submit" className="w-full cursor-pointer">
-            Filtrar Fotos
+            {navigation.state == "loading" || navigation.state == "submitting" ?
+              <>
+                <Spinner aria-label="Loading..." size="sm" className={navigation.state === "submitting" ? "inline-block mr-2" : "hidden"} />
+                <span className="pl-3">Filtrando...</span>
+              </> :
+              <span className="pl-3">Filtrar Fotos</span>
+            }
           </Button>
         </Form>
       </Card>
 
       {/* Lista de fotos filtradas */}
-      {actionData?.photos?.length && (
+      {actionData?.filteredPhotos?.length ? (
         <div>
           <h2 className="text-xl font-semibold mb-4">Fotos Filtradas</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {actionData.photos.map((photo) => (
+            {actionData.filteredPhotos.map((photo) => (
               <Card key={photo.id} className="rounded-lg shadow-md">
                 <img
                   src={photo.url + "&sz=w600"}
@@ -112,7 +150,7 @@ export default function FaceFilteredPage() {
             ))}
           </div>
         </div>
-      )}
+      ) : ""}
     </div>
   );
 }

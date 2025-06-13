@@ -108,13 +108,26 @@ export async function action({ request, params }) {
     ...Object.fromEntries(formData)
   };
 
+  if (formDataObj.photoCount) return { error: "No photos uploaded. Please select at least one photo." };
+
+  if (formDataObj.deletePhotoId) {
+    const deleteResponse = await photoController.deleteById(formDataObj.deletePhotoId);
+
+    if (deleteResponse.error) {
+      return { error: deleteResponse.message };
+    }
+
+    return {
+      message: "Photo deleted successfully."
+    }
+  }
+
   // Format fields
   formDataObj.date = formDataObj.date ? new Date(formDataObj.date).toISOString() : null;
 
   const updateResponse = await eventController.update(params.eventId, formDataObj);
 
   if (updateResponse.error) {
-    console.error("Error updating event:", updateResponse.message);
     return { error: updateResponse.message };
   }
 
@@ -136,14 +149,15 @@ export default function EditEventPage() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Editar Evento</h1>
 
+      {actionData?.error && (
+        <Alert color="failure" className="mb-4">
+          {actionData.error}
+        </Alert>
+      )}
+
       {/* Formulário de edição do evento */}
       <Card className="mb-8">
         <h2 className="text-xl font-semibold mb-4 text-secondary-100">Dados do Evento</h2>
-        {actionData?.error && (
-          <Alert color="failure" className="mb-4">
-            {actionData.error}
-          </Alert>
-        )}
         <Form method="post" encType="multipart/form-data" className="space-y-4">
           <div>
             <Label htmlFor="title">Título do Evento</Label>
@@ -194,7 +208,13 @@ export default function EditEventPage() {
             />
           </div>
           <Button type="submit" className="w-full cursor-pointer">
-            Atualizar Evento
+            {navigation.state == "loading" || navigation.state == "submitting" ?
+              <>
+                <Spinner aria-label="Loading..." size="sm" className={navigation.state === "submitting" ? "inline-block mr-2" : "hidden"} />
+                <span className="pl-3">Atualizando...</span>
+              </> :
+              <span className="pl-3">Atualizar Evento</span>
+            }
           </Button>
         </Form>
       </Card>
@@ -242,17 +262,22 @@ export default function EditEventPage() {
           <h2 className="text-xl font-semibold mb-4 text-secondary-100">Fotos do Evento</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {event.photos?.map((photo) => (
-              <Card key={photo.id} className="rounded-lg shadow-md">
+              <Card key={photo.id} className="rounded-lg shadow-md relative">
                 <img
                   src={photo.url}
                   alt={`Photo ${photo.id}`}
                   className="w-full h-32 object-cover rounded-lg"
                 />
                 <Form method="post" encType="multipart/form-data" className="mt-2">
-                  <Label htmlFor={`photo-${photo.id}`}>Atualizar Foto</Label>
-                  <FileInput id={`photo-${photo.id}`} name={`photo-${photo.id}`} />
-                  <Button type="submit" color="light" className="mt-2 w-full cursor-pointer">
-                    Atualizar
+                  <input type="hidden" name="deletePhotoId" value={photo.id} />
+                  <Button
+                    type="submit"
+                    color="red"
+                    size="xs"
+                    className="rounded-full cursor-pointer absolute top-1.5 right-1.5"
+                    aria-label="Excluir Foto"
+                  >
+                    X
                   </Button>
                 </Form>
               </Card>

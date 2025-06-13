@@ -25,6 +25,18 @@ class Photo {
     }
   }
 
+  async countByEvent(eventId) {
+    try {
+      if (!eventId) throw new Error("Invalid event ID provided for photo count.");
+
+      return await prisma.photo.count({
+        where: { eventId },
+      });
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
   // Get all photos
   async getAll() {
     try {
