@@ -1,20 +1,39 @@
 import { useLoaderData, Link } from "react-router";
 import { Label, TextInput, Select, Button, Card, Carousel } from "flowbite-react";
 import { eventController } from "../../controllers/event.controller";
+import { getAuthToken } from "../../utils/auth.server";
+import { userController } from "../../controllers/user.controller";
 
-export async function loader() {
+const eventsPerPage = 20;
+
+export async function loader({ request }) {
+  const url = new URL(request.url);
+  const currentPage = url.searchParams.get("page") ? parseInt(url.searchParams.get("page"), 10) : 1;
+  const token = await getAuthToken(request);
+  var validationResponse = null;
+
+  if (token) {
+    validationResponse = await userController.validateToken(token);
+  }
+
   // Pega 3 eventos de maior relevanceScore
   const eventsRelevantResponse = await eventController.listRelevant(3);
-  const eventsListResponse = await eventController.listPaginated(1, 50);
+  const eventsListResponse = await eventController.listPaginated(currentPage, eventsPerPage, validationResponse?.data?.role);
+
+  if (eventsListResponse.error) {
+    return { error: eventsListResponse.message };
+  }
 
   return {
     eventsRelevant: !eventsRelevantResponse.error ? eventsRelevantResponse.data : [],
     events: !eventsListResponse.error ? eventsListResponse.data.events : [],
+    page: currentPage,
+    totalPages: eventsListResponse.data.totalPages,
   };
 }
 
 export default function EventsPage() {
-  const { eventsRelevant, events } = useLoaderData();
+  const { eventsRelevant, events, page, totalPages } = useLoaderData();
 
   return (
     <>
@@ -22,11 +41,13 @@ export default function EventsPage() {
       <Carousel className="h-96">
         {eventsRelevant?.map((event) => (
           <div key={event.id} className="relative h-full">
-            <img
-              src={event.photos?.find(photo => photo.isCover)?.url + "&sz=w800"}
-              alt={event.title}
-              className="object-cover w-full h-full"
-            />
+            {event.photos?.find(photo => photo.isCover) &&
+              <img
+                src={event.photos?.find(photo => photo.isCover)?.url + "&sz=w800"}
+                alt={event.title}
+                className="object-cover w-full h-full"
+              />
+            }
             <Link
               key={event.id}
               to={`/events/${event.id}`}
@@ -90,18 +111,20 @@ export default function EventsPage() {
               to={`/events/${event.id}`}
               className="hover:shadow-lg transition-shadow duration-300"
             >
-              <Card className="rounded-lg shadow-md">
+              <Card className="rounded-lg shadow-md h-full">
                 {/* Imagem do evento */}
-                <div className="h-60 overflow-hidden rounded-t-lg">
-                  <img
-                    src={event.photos?.find(photo => photo.isCover)?.url + "&sz=w600"}
-                    alt={event.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                {event.photos?.find(photo => photo.isCover) &&
+                  <div className="h-60 overflow-hidden rounded-t-lg">
+                    <img
+                      src={event.photos?.find(photo => photo.isCover)?.url + "&sz=w600"}
+                      alt={event.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                }
 
                 {/* Informações do evento */}
-                <div className="p-4">
+                <div className={`p-4 ${!event.photos?.find(photo => photo.isCover) && "h-full"}`} >
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-100">{event.date.toLocaleDateString()}</span>
                     <span className="text-sm text-gray-100">
@@ -116,6 +139,25 @@ export default function EventsPage() {
               </Card>
             </Link>
           ))}
+        </div>
+
+        {/* Paginação */}
+        <div className="flex justify-between items-center mt-4 md:mt-6">
+          <span className="text-gray-600">
+            Página {page} de {totalPages}
+          </span>
+          <div className="flex space-x-4">
+            {page > 1 && (
+              <Button href={`?page=${page - 1}`} color="light" className="cursor-pointer">
+                Página Anterior
+              </Button>
+            )}
+            {page < totalPages && (
+              <Button href={`?page=${page + 1}`} color="light" >
+                Próxima Página
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </>

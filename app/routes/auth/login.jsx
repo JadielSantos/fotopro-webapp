@@ -26,7 +26,7 @@ export async function action({ request }) {
 
   const response = await userController.login(email, password);
 
-  if (response.status !== 200) {
+  if (response.error) {
     return { error: response.message }, { status: response.status };
   }
 

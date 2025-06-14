@@ -1,41 +1,62 @@
 import { useState } from "react";
-import { Form, useSubmit, useNavigate } from "react-router";
+import { Form, useSubmit, redirect, useNavigation, useActionData } from "react-router";
 import {
   Label,
   TextInput,
   Textarea,
-  FileInput,
   Checkbox,
   Button,
-  HelperText,
   Alert,
   Radio,
 } from "flowbite-react";
 import { HiMail } from "react-icons/hi";
 import { UserRole } from "../../enums/user.enum";
+import { userController } from "../../controllers/user.controller";
+import { createAuthCookie } from "../../utils/auth.server";
+
+export async function action({ request }) {
+  const formData = Object.fromEntries(await request.formData());
+  const response = await userController.register(formData);
+  if (response.error) {
+    return { error: response.message, status: response.status };
+  }
+
+  // Create a cookie with the JWT token
+  const authCookie = await createAuthCookie(response.data.authToken);
+
+  // Redirect to a protected route after login
+  return redirect("/profile", {
+    headers: {
+      "Set-Cookie": authCookie,
+    },
+  });
+}
 
 export default function Register() {
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="text-center text-3xl font-extrabold text-gray-900">
-          Cadastro de Cliente
+          Cadastro de Cliente ou Fotógrafo
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Crie sua conta para acessar e comprar suas fotos
+        </p>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Se você for um Fotógrafo, você poderá vender suas fotos e gerenciar seus eventos.
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-2 px-4 shadow sm:rounded-lg sm:px-10">
-          <RegisterForm redirectTo="/dashboard/client" />
+          <RegisterForm />
         </div>
       </div>
     </div>
   );
 }
 
-function RegisterForm({ redirectTo }) {
+function RegisterForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,56 +69,41 @@ function RegisterForm({ redirectTo }) {
   const [xUsername, setXUsername] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [bio, setBio] = useState("");
-  const [profileImageUrl, setProfileImageUrl] = useState(null);
-  const [coverImageUrl, setCoverImageUrl] = useState(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const submit = useSubmit();
-  const navigate = useNavigate();
+  const navigation = useNavigation();
+  const actionData = useActionData();
+  const isLoading = navigation.state === "loading" || navigation.state === "submitting";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("email", email);
-    formData.append("password", password);
-    formData.append("confirmPassword", confirmPassword);
-    formData.append("role", role);
-    formData.append("phone", phone);
-    formData.append("businessName", businessName);
-    formData.append("bio", bio);
-    formData.append("websiteUrl", websiteUrl);
-    formData.append("instagramUsername", instagramUsername);
-    formData.append("facebookUsername", facebookUsername);
-    formData.append("xUsername", xUsername);
-
-    if (profileImageUrl) {
-      formData.append("profileImageUrl", profileImageUrl);
+    const data = {
+      name,
+      email,
+      password,
+      role,
+      phone,
+      businessName,
+      bio,
+      websiteUrl,
+      instagramUsername,
+      facebookUsername,
+      xUsername,
     }
 
-    if (coverImageUrl) {
-      formData.append("coverImageUrl", coverImageUrl);
+    if (password !== confirmPassword) {
+      return alert("As senhas não coincidem.");
+    }
+    if (!acceptTerms) {
+      return alert("Você deve aceitar os termos e condições.");
     }
 
-    try {
-      submit(formData, { method: "post" });
-      setError(null);
-      navigate(redirectTo || "/");
-    } catch (err) {
-      setError("Erro ao cadastrar. Tente novamente.");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
+    submit(data, { method: "post" });
   };
 
   return (
-    <Form className="flex max-w-md flex-col gap-4" onSubmit={handleSubmit}>
-      {error && <Alert color="failure">{error}</Alert>}
+    <Form className="flex max-w-md flex-col gap-4">
+      {actionData?.error && <Alert color="failure">{actionData?.error}</Alert>}
 
       <div className="flex max-w-md flex-col gap-4">
         <div className="flex items-center gap-2">
@@ -206,27 +212,6 @@ function RegisterForm({ redirectTo }) {
           </div>
 
           <div>
-            <Label htmlFor="profileImageUrl" color="dark">Imagem de Perfil</Label>
-            <FileInput
-              id="profileImageUrl"
-              accept="image/*"
-              onChange={(e) => setProfileImageUrl(e.target.files?.[0] || null)}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="coverImageUrl" color="dark">Imagem de Capa</Label>
-            <FileInput
-              id="coverImageUrl"
-              accept="image/*"
-              onChange={(e) => setCoverImageUrl(e.target.files?.[0] || null)}
-            />
-            <HelperText>
-              A imagem de capa será exibida na parte superior do seu perfil.
-            </HelperText>
-          </div>
-
-          <div>
             <Label htmlFor="websiteUrl" color="dark">Website</Label>
             <TextInput
               id="websiteUrl"
@@ -275,7 +260,7 @@ function RegisterForm({ redirectTo }) {
       <div className="flex items-center gap-2">
         <Checkbox
           id="accept"
-          defaultChecked
+          defaultChecked={false}
           onChange={(e) => setAcceptTerms(e.target.checked)}
         />
         <Label htmlFor="accept" color="dark">
@@ -286,7 +271,7 @@ function RegisterForm({ redirectTo }) {
         </Label>
       </div>
 
-      <Button type="submit" disabled={isLoading || !acceptTerms} className="cursor-pointer">
+      <Button type="submit" disabled={isLoading || !acceptTerms} className="cursor-pointer" onClick={handleSubmit}>
         {isLoading ? "Enviando..." : "Cadastrar"}
       </Button>
 

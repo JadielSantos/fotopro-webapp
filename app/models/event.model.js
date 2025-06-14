@@ -7,8 +7,6 @@ class Event {
       if (!data || typeof data !== "object")
         throw new Error("Invalid data provided for event creation.");
     
-      console.log("Creating event with data:", data);
-
       return await prisma.event.create({ data });
     } catch (error) {
       throw new Error(error);
@@ -25,7 +23,7 @@ class Event {
   }
 
   // Get a single event by ID
-  async getById(id, { includeUser = false , includePhotos = false } = {}) {
+  async getById(id, { includeUser = false , includePhotos = false, includePhotosSelections = false } = {}) {
     try {
       if (!id) throw new Error("Invalid ID provided for event retrieval.");
 
@@ -34,6 +32,7 @@ class Event {
         include: {
           user: includeUser,
           photos: includePhotos,
+          photosSelections: includePhotosSelections
         }
       });
     } catch (error) {

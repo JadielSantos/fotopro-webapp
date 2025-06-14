@@ -1,4 +1,6 @@
+import { UserRole } from "../enums/user.enum.js";
 import { eventModel } from "../models/event.model.js";
+import bcrypt from "bcrypt";
 
 class EventController {
   /**
@@ -21,13 +23,14 @@ class EventController {
    * @param {number} limit Número de eventos por página.
    * @returns {Promise<Object>} Eventos paginados ou erro.
    */
-  async listPaginated(page = 1, limit = 10) {
+  async listPaginated(page = 1, limit = 20, userRole) {
     try {
       const skip = (page - 1) * limit;
       const total = await eventModel.count();
       const events = await eventModel.getByQuery({
         skip,
         take: limit,
+        where: userRole !== UserRole.ADMIN ? { photos: { some: {} }, isPublic: true } : {},
         orderBy: { createdAt: "desc" },
         include: { user: true, photos: true },
       });
@@ -42,8 +45,58 @@ class EventController {
         },
       };
     } catch (error) {
-      console.error("Erro ao listar eventos paginados:", error);
       return { status: 500, message: "Não foi possível listar os eventos paginados.", error: true };
+    }
+  }
+
+  /**
+   * Autentica o acesso a um evento.
+   * @param {Object} event Evento a ser autenticado.
+   * @param {string} password Senha para autenticação.
+   * @returns {Promise<Object>} Resultado da autenticação ou erro.
+   */
+  async authAccess(eventId, password) {
+    try {
+      if (!eventId || !password)
+        return {
+          status: 400,
+          message: "ID do evento e senha são obrigatórios.",
+          error: true,
+        };
+
+      const event = await eventModel.getById(eventId, {
+        includeUser: true,
+        includePhotos: true,
+      });
+      if (!event) {
+        return {
+          status: 404,
+          message: "Evento não encontrado.",
+          error: true,
+        };
+      }
+
+      const isPasswordValid = bcrypt.compareSync(password, event.accessHash);
+      if (!isPasswordValid) {
+        return {
+          status: 403,
+          message: "Acesso negado. Senha incorreta.",
+          error: true,
+        }
+      }
+
+      return {
+        status: 200,
+        data: event,
+        message: "Acesso autorizado.",
+        error: false,
+      }
+    } catch (error) {
+      return {
+        status: 500,
+        message: "Não foi possível autenticar o acesso ao evento.",
+        error: true,
+      };
     }
   }
 
@@ -56,6 +109,7 @@ class EventController {
     try {
       const events = await eventModel.getByQuery({
         take: numberOfEvents,
+        where: { photos: { some: {} }, isPublic: true },
         orderBy: { relevanceScore: "desc" },
         include: { user: true, photos: true },
       });
@@ -72,11 +126,12 @@ class EventController {
    * @param {string} id ID do evento.
    * @returns {Promise<Object>} Evento encontrado ou erro.
    */
-  async findById(id) {
+  async findById(id, { includeUser = false , includePhotos = false, includePhotosSelections = false } = {}) {
     try {
       const event = await eventModel.getById(id, {
-        includeUser: true,
-        includePhotos: true,
+        includeUser,
+        includePhotos,
+        includePhotosSelections,
       });
       if (!event) {
         return { status: 404, message: "Evento não encontrado.", error: true };

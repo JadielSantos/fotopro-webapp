@@ -4,6 +4,8 @@ import { getAuthToken } from "../../utils/auth.server";
 import { userController } from "../../controllers/user.controller";
 import { UserRole } from "../../enums/user.enum";
 import { eventController } from "../../controllers/event.controller";
+import bcrypt from "bcrypt";
+import { useState } from "react";
 
 export async function loader({ request }) {
   const token = await getAuthToken(request);
@@ -50,16 +52,23 @@ export async function action({ request }) {
   const unpublishAt = new Date(formData.get("unpublishAt")).toISOString() || null;
   const description = formData.get("description");
   const userId = formData.get("userId");
+  var accessHash = formData.get("accessHash");
 
-  if (!title || !date || !isPublic || !addressName || !city || !state || !country || !pricePerPhoto || !publishAt || !description) {
-    console.error("Missing required fields for event creation.");
+  if (!title || !date || !addressName || !city || !state || !country || !pricePerPhoto || !description) {
     return { error: "Todos os campos são obrigatórios." }, { status: 400 };
+  }
+
+  // Criptografar a senha do evento se não for público
+  accessHash = isPublic ? null : await bcrypt.hash(accessHash, 10);
+  if (!isPublic && !accessHash) {
+    return { error: "A senha do evento é obrigatória para eventos privados." }, { status: 400 };
   }
 
   const newEventResponse = await eventController.create({
     title,
     date,
     isPublic,
+    accessHash,
     addressName,
     city,
     state,
@@ -83,12 +92,13 @@ export default function NewEventPage() {
   const actionData = useActionData();
   const { user } = useLoaderData();
   const submit = useSubmit();
+  const [isPublic, setIsPublic] = useState(true);
 
   function handleSubmit(event) {
     const formData = new FormData(event.target.form);
-    const date = formData.get("date");
-    const publishAt = formData.get("publishAt");
-    const unpublishAt = formData.get("unpublishAt");
+    // const date = formData.get("date");
+    // const publishAt = formData.get("publishAt");
+    // const unpublishAt = formData.get("unpublishAt");
 
     // // Validar se a data de publicação é anterior à data do evento
     // if (new Date(publishAt) < new Date(date)) {
@@ -131,8 +141,7 @@ export default function NewEventPage() {
             name="date"
             placeholder="Selecione a data do evento"
             required
-            minDate={new Date().toISOString().split("T")[0]} // Não permite datas passadas
-            maxDate={new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split("T")[0]} // Permite até 1 ano no futuro
+            minDate={new Date()} // Não permite datas passadas
             displayFormat="dd/mm/yyyy"
           // onChange={(date) => {
           //   const formattedDate = date.toISOString().split("T")[0];
@@ -142,12 +151,29 @@ export default function NewEventPage() {
         </div>
         <div>
           <Label htmlFor="isPublic" color="dark">Evento Público</Label>
-          <Select id="isPublic" name="isPublic" required>
+          <Select
+            id="isPublic"
+            name="isPublic"
+            required
+            onChange={(e) => setIsPublic(e.target.value === "true")}
+          >
             <option value="">Selecione uma opção</option>
             <option value="true">Sim</option>
             <option value="false">Não</option>
           </Select>
         </div>
+        {!isPublic && (
+          <div>
+            <Label htmlFor="emailsAccess" color="dark">Lista de Emails para Acessar</Label>
+            <TextInput
+              id="emailsAccess"
+              name="emailsAccess"
+              type="text"
+              placeholder="Digite os emails separados por vírgula. Somente usuários com esses emails poderão acessar o evento."
+              required={!isPublic} // Campo obrigatório se o evento não for público
+            />
+          </div>
+        )}
         <div>
           <Label htmlFor="description" color="dark">Descrição do Evento</Label>
           <Textarea
@@ -206,15 +232,14 @@ export default function NewEventPage() {
             required
           />
         </div>
-        <div>
+        {/* <div>
           <Label htmlFor="publishAt" color="dark">Publicar em</Label>
           <Datepicker
             id="publishAt"
             name="publishAt"
             placeholder="Selecione a data de publicação"
             required
-            minDate={new Date().toISOString().split("T")[0]} // Não permite datas passadas
-            maxDate={new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split("T")[0]} // Permite até 1 ano no futuro
+            minDate={new Date()} // Não permite datas passadas
             displayFormat="dd/mm/yyyy"
           // onChange={(date) => {
           //   const formattedDate = date.toISOString().split("T")[0];
@@ -228,15 +253,14 @@ export default function NewEventPage() {
             id="unpublishAt"
             name="unpublishAt"
             placeholder="Selecione a data de despublicação"
-            minDate={new Date().toISOString().split("T")[0]} // Não permite datas passadas
-            maxDate={new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split("T")[0]} // Permite até 1 ano no futuro
+            minDate={new Date()} // Não permite datas passadas
             displayFormat="dd/mm/yyyy"
           // onChange={(date) => {
           //   const formattedDate = date.toISOString().split("T")[0];
           //   document.getElementById("unpublishAt").value = formattedDate;
           // }}
           />
-        </div>
+        </div> */}
         <input type="hidden" name="userId" value={user.id} />
         <Alert color="warning" className="mb-4">
           <p>Avance para a próxima etapa para adicionar fotos ao evento.</p>

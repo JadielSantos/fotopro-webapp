@@ -6,16 +6,44 @@ import { LocalFileStorage } from "@mjackson/file-storage/local";
 import { parseFormData } from "@mjackson/form-data-parser";
 import { clearDirectory, deleteDirectory } from "../../../../utils/util";
 import { photoController } from "../../../../controllers/photo.controller";
+import { getAuthToken } from "../../../../utils/auth.server";
+import { userController } from "../../../../controllers/user.controller";
+import { UserRole } from "../../../../enums/user.enum";
+import AccessEventPage from "../../../../components/EventAccess";
+import { photosSelectionController } from "../../../../controllers/photosSelection.controller";
+import PhotosList from "../../../../components/PhotosList";
 
 const tmpUploadsDir = "./tmp_uploads";
 const storage = new LocalFileStorage(tmpUploadsDir);
 
-export async function loader({ params }) {
+export async function loader({ request, params }) {
   const { eventId } = params;
+  const token = await getAuthToken(request);
+  var user = null;
 
-  const eventResponse = await eventController.findById(eventId);
+  if (token) {
+    const validationResponse = await userController.validateToken(token);
 
-  if (eventResponse?.error && eventResponse.status === 404) {
+    if (!validationResponse.error) {
+
+      const loginData = validationResponse.data;
+
+      // Fetch additional user details if needed
+      const userResponse = await userController.getById(loginData.id);
+
+      if (!userResponse.error) {
+        user = userResponse.data;
+      }
+    }
+  }
+
+  const eventResponse = await eventController.findById(eventId, {
+    includeUser: true,
+    includePhotos: true,
+    includePhotosSelections: true,
+  });
+
+  if (eventResponse?.error) {
     console.error("Evento não encontrado para o ID:", eventId);
     return redirect("/not-found");
   } else if (eventResponse?.error) {
@@ -23,7 +51,13 @@ export async function loader({ params }) {
     return redirect("/events");
   }
 
-  return { event: eventResponse.data };
+  if (!eventResponse.data.isPublic && user?.id !== eventResponse.data.userId && user?.role !== UserRole.ADMIN) {
+    return {
+      lockedEvent: true,
+    }
+  }
+
+  return { event: eventResponse.data, user };
 }
 
 export async function action({ request, params }) {
@@ -42,6 +76,52 @@ export async function action({ request, params }) {
 
   const formData = await parseFormData(request, uploadHandler);
   const files = formData.getAll("selfie");
+  const password = formData.get("accessHash");
+  const selectedPhotoIds = formData.get("selectedPhotoIds");
+  const totalPrice = formData.get("totalPrice");
+  const userId = formData.get("userId");
+
+  if (password) {
+    const authResponse = await eventController.authAccess(eventId, password);
+    if (authResponse?.error) {
+      return { error: authResponse.message };
+    }
+
+    return { event: authResponse.data };
+  }
+
+  // Submeter seleção de fotos
+  if (selectedPhotoIds) {
+    const selectedPhotoIdsArr = selectedPhotoIds.split(",");
+    if (!selectedPhotoIdsArr.length) {
+      return { error: "Nenhuma foto selecionada." };
+    }
+
+    const eventResponse = await eventController.findById(eventId);
+    if (eventResponse?.error) {
+      return { error: eventResponse.message };
+    }
+
+    const userResponse = await userController.getById(userId);
+    if (userResponse?.error) {
+      return { error: userResponse.message };
+    }
+
+    const selectionResponse = await photosSelectionController.create({
+      name: `${eventResponse.data.title} - ${userResponse.data.email}`,
+      eventId,
+      photosList: selectedPhotoIds,
+      totalPhotos: selectedPhotoIdsArr.length,
+      totalPrice: parseFloat(totalPrice),
+      userId,
+    });
+
+    if (selectionResponse?.error) {
+      return { error: selectionResponse.message };
+    }
+
+    return { message: "Fotos selecionadas enviadas com sucesso!" };
+  }
 
   if (!files?.length) return { error: "Nenhuma foto enviada. Por favor, selecione uma selfie." };
 
@@ -91,11 +171,15 @@ export async function action({ request, params }) {
 }
 
 export default function FaceFilteredPage() {
-  const { event } = useLoaderData();
+  const loaderData = useLoaderData();
   const actionData = useActionData();
   const navigation = useNavigation();
+  const event = actionData?.event || loaderData?.event;
+  const lockedEvent = actionData?.lockedEvent || loaderData?.lockedEvent;
+  const user = loaderData?.user;
 
-  return (
+  return lockedEvent && !event ?
+    <AccessEventPage /> :
     <div className="container mx-auto px-4 py-8">
       {/* Título do evento */}
       <div className="flex justify-between items-center mb-4 md:mb-6">
@@ -134,23 +218,7 @@ export default function FaceFilteredPage() {
         </Form>
       </Card>
 
-      {/* Lista de fotos filtradas */}
-      {actionData?.filteredPhotos?.length ? (
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Fotos Filtradas</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {actionData.filteredPhotos.map((photo) => (
-              <Card key={photo.id} className="rounded-lg shadow-md">
-                <img
-                  src={photo.url + "&sz=w600"}
-                  alt={`Photo ${photo.id}`}
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-              </Card>
-            ))}
-          </div>
-        </div>
-      ) : ""}
+      <PhotosList photos={actionData?.filteredPhotos} eventId={event.id} userId={user?.id} pricePerPhoto={event.pricePerPhoto} />
+
     </div>
-  );
 }

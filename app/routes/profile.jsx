@@ -1,8 +1,11 @@
-import { useLoaderData, Form, useActionData, redirect, useSubmit } from "react-router";
+import { useLoaderData, Form, useActionData, redirect, useSubmit, Link } from "react-router";
 import { userController } from "../controllers/user.controller";
 import { getAuthToken, invalidateAuthCookie } from "../utils/auth.server";
-import { Button, Label, TextInput, Select, Alert } from "flowbite-react";
+import { Button, Label, TextInput, Select, Alert, ModalHeader, ModalBody, ModalFooter, Modal } from "flowbite-react";
 import { UserRole } from "../enums/user.enum";
+import { useState } from "react";
+import { photoController } from "../controllers/photo.controller";
+import PhotosSelectionList from "../components/PhotosSelectionList";
 
 export async function loader({ request }) {
   const token = await getAuthToken(request);
@@ -20,15 +23,40 @@ export async function loader({ request }) {
   const user = validationResponse.data;
 
   // Fetch additional user details if needed
-  const userDetails = await userController.getById(user.id);
+  const userDetails = await userController.getById(user.id, {
+    includePhotosSelections: true,
+    includeEvents: true,
+  });
 
-  return { userResponse: userDetails };
+  if (userDetails.error) {
+    return redirect("/events");
+  }
+
+  return { user: userDetails.data };
 }
 
 export async function action({ request }) {
   const formData = {
     ...Object.fromEntries(await request.formData())
   };
+
+  if (formData.photosList) {
+    const photosResponse = await photoController.getByQuery({
+      where: {
+        id: {
+          in: formData.photosList.split(","),
+        },
+      },
+    });
+
+    if (photosResponse.error) {
+      return { error: photosResponse.message, status: 500 };
+    }
+
+    return {
+      photos: photosResponse.data,
+    }
+  }
 
   if (formData.logout) {
     // Invalida o cookie de autenticação
@@ -54,9 +82,8 @@ export async function action({ request }) {
 }
 
 export default function Profile() {
-  const { userResponse } = useLoaderData();
+  const { user } = useLoaderData();
   const actionData = useActionData();
-  const user = userResponse.data;
   const submit = useSubmit();
 
   const handleLogout = async () => {
@@ -71,7 +98,7 @@ export default function Profile() {
         <p className="text-secondary-700 mb-4">
           Você é: {user.role === UserRole.PHOTOGRAPHER ? "Fotógrafo" : user.role === UserRole.CUSTOMER ? "Cliente" : "Administrador"}.
         </p>
-        <Button onClick={handleLogout} color="red" className="text-white cursor-pointer">
+        <Button onClick={handleLogout} color="red" className="cursor-pointer">
           Sair
         </Button>
       </div>
@@ -104,17 +131,44 @@ export default function Profile() {
             required
           />
         </div>
-        <div>
-          <Label htmlFor="role" color="dark">Função</Label>
-          <Select id="role" name="role" defaultValue={user.role} required>
-            <option value="photographer">Fotógrafo</option>
-            <option value="customer">Cliente</option>
-          </Select>
-        </div>
+        {user.role !== UserRole.ADMIN && (
+          <div>
+            <Label htmlFor="role" color="dark">Função</Label>
+            <Select id="role" name="role" defaultValue={user.role} required>
+              <option value="PHOTOGRAPHER">Fotógrafo</option>
+              <option value="CUSTOMER">Cliente</option>
+            </Select>
+          </div>
+        )}
         <Button type="submit" className="w-full cursor-pointer">
           Salvar Alterações
         </Button>
       </Form>
+
+      {(user.role === UserRole.CUSTOMER || user.role === UserRole.ADMIN) && user.photosSelections && (
+        <PhotosSelectionList title={"Suas Seleções de Fotos"} photosSelections={user.photosSelections} />
+      )}
+
+      {(user.role === UserRole.PHOTOGRAPHER || user.role === UserRole.ADMIN) && user.events?.length ? (
+        <div className="mt-6">
+          <h2 className="text-xl font-semibold mb-4">Seus Eventos</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {user.events.map((event) => (
+              <Link
+                key={event.id}
+                to={`/events/${event.id}`}
+                className="hover:shadow-lg transition-shadow duration-300"
+              >
+                <div className="p-4 border border-gray-200 rounded-lg shadow-sm">
+                  <h3 className="text-lg font-bold">{event.title}</h3>
+                  <p className="text-sm text-gray-600">{new Date(event.date).toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-700">{event.description}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : ""}
     </div>
   );
 }

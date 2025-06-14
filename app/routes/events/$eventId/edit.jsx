@@ -19,9 +19,8 @@ import { userController } from "../../../controllers/user.controller";
 import { UserRole } from "../../../enums/user.enum";
 import { eventController } from "../../../controllers/event.controller";
 import { photoController } from "../../../controllers/photo.controller";
-import fs from "fs";
-import path from "path";
 import { clearDirectory } from "../../../utils/util";
+import bcrypt from "bcrypt";
 
 const tmpUploadsDir = "./tmp_uploads";
 const storage = new LocalFileStorage(tmpUploadsDir);
@@ -52,7 +51,10 @@ export async function loader({ request, params }) {
     return redirect("/auth/login");
   }
 
-  const eventResponse = await eventController.findById(params.eventId);
+  const eventResponse = await eventController.findById(params.eventId, {
+    includeUser: true,
+    includePhotos: true,
+  });
 
   if (eventResponse?.error && eventResponse.status === 404) {
     console.error("Event not found for ID:", params.eventId);
@@ -124,6 +126,8 @@ export async function action({ request, params }) {
 
   // Format fields
   formDataObj.date = formDataObj.date ? new Date(formDataObj.date).toISOString() : null;
+  formDataObj.isPublic = formDataObj.isPublic === "true";
+  formDataObj.accessHash = formDataObj.isPublic ? null : bcrypt.hashSync(formDataObj.accessHash, 10);
 
   const updateResponse = await eventController.update(params.eventId, formDataObj);
 
@@ -139,6 +143,7 @@ export default function EditEventPage() {
   const actionData = useActionData();
   const navigation = useNavigation();
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [isPublic, setIsPublic] = useState(event.isPublic);
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -180,6 +185,30 @@ export default function EditEventPage() {
               required
             />
           </div>
+          <div>
+            <Label htmlFor="isPublic">Evento Público</Label>
+            <Select
+              id="isPublic"
+              name="isPublic"
+              required
+              onChange={(e) => setIsPublic(e.target.value === "true")}
+            >
+              <option value="true" selected={event.isPublic}>Sim</option>
+              <option value="false" selected={!event.isPublic}>Não</option>
+            </Select>
+          </div>
+          {!isPublic && (
+            <div>
+              <Label htmlFor="accessHash">Senha de Acesso às Fotos do Evento</Label>
+              <TextInput
+                id="accessHash"
+                name="accessHash"
+                type="text"
+                placeholder="Insira uma senha para outros usuários acessarem as fotos"
+                required={!isPublic} // Campo obrigatório se o evento não for público
+              />
+            </div>
+          )}
           <div>
             <Label htmlFor="city">Cidade</Label>
             <TextInput

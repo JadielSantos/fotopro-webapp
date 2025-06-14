@@ -6,16 +6,45 @@ const JWT_SECRET = process.env.JWT_SECRET; // Substitua por uma chave secreta se
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION; // Tempo de expiração do token
 
 class UserController {
-  async getById(id) {
+  async update(id, data) {
+    try {
+      // Validate input data
+      if (!data || typeof data !== "object" || !id) {
+        return { status: 400, message: "Dados inválidos.", error: true };
+      }
+      // Check if user exists
+      const existingUser = await userModel.getById(id);
+      if (!existingUser) {
+        return { status: 404, message: "Usuário não encontrado.", error: true };
+      }
+
+      // Update user data
+      const updatedUser = await userModel.update(id, data);
+      if (!updatedUser) {
+        return { status: 500, message: "Não foi possível atualizar o usuário.", error: true };
+      }
+
+      // Return updated user data without password
+      const { password, ...userData } = updatedUser;
+      return { status: 200, data: userData };
+    } catch (error) {
+      return { status: 500, message: "Internal server error.", error: true };
+    }
+  }
+
+  async getById(id, { includePhotosSelections = false, includeEvents = false } = {}) {
     try {
       // Validate ID
       if (!id) {
-        return { status: 400, message: "Invalid ID provided." };
+        return { status: 400, message: "Dados inválidos.", error: true };
       }
       // Fetch user by ID
-      const user = await userModel.getById(id);
+      const user = await userModel.getById(id, {
+        includePhotosSelections,
+        includeEvents,
+      });
       if (!user) {
-        return { status: 404, message: "User not found.", error: true };
+        return { status: 404, message: "Usuário não encontrado.", error: true };
       }
       // Return user data without password
       const { password, ...userData } = user;
@@ -75,13 +104,13 @@ class UserController {
     try {
       // Validate input
       if (!email || !password) {
-        return { status: 400, message: "Email and password are required." };
+        return { status: 400, message: "Email and password are required.", error: true };
       }
 
       // Find user by email
       const [existingUser] = await userModel.getByQuery({ email });
       if (!existingUser) {
-        return { status: 404, message: "User not found." };
+        return { status: 404, message: "User not found.", error: true };
       }
 
       // Verify password
@@ -90,7 +119,7 @@ class UserController {
         existingUser.password
       );
       if (!isPasswordValid) {
-        return { status: 401, message: "Invalid credentials." };
+        return { status: 401, message: "Invalid credentials.", error: true };
       }
 
       // Generate login data
@@ -105,7 +134,12 @@ class UserController {
     try {
       // Generate a JWT token
       const token = jwt.sign(
-        { id: userData.id, email: userData.email },
+        { 
+          id: userData.id, 
+          email: userData.email,
+          role: userData.role,
+          name: userData.name
+        },
         JWT_SECRET,
         {
           expiresIn: JWT_EXPIRATION,

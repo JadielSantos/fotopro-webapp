@@ -54,7 +54,7 @@ class Photo {
 
       return await prisma.photo.findMany(query);
     } catch (error) {
-      throw new Error("Failed to retrieve photos by query.");
+      throw new Error(error);
     }
   }
 
@@ -67,7 +67,7 @@ class Photo {
         where: { id },
       });
     } catch (error) {
-      throw new Error("Failed to retrieve photo by ID.");
+      throw new Error(error);
     }
   }
 

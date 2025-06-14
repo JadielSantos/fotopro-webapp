@@ -26,12 +26,16 @@ class User {
    * @param {string} id - The ID of the user to retrieve.
    * @returns {Promise<Object>} - A promise that resolves to the user object.
    */
-  async getById(id) {
+  async getById(id, { includePhotosSelections = false, includeEvents = false } = {}) {
     try {
       if (!id) throw new Error("Invalid ID provided for user retrieval.");
 
       return await prisma.user.findUnique({
         where: { id },
+        include: {
+          photosSelections: includePhotosSelections,
+          events: includeEvents,
+        }
       });
     } catch (error) {
       throw new Error("Failed to retrieve user by ID.");
