@@ -13,6 +13,7 @@ import AccessEventPage from "../../../../components/EventAccess";
 import { photosSelectionController } from "../../../../controllers/photosSelection.controller";
 import PhotosList from "../../../../components/PhotosList";
 
+const faceRecognitionBaseUrl = "http://127.0.0.1:5000";
 const tmpUploadsDir = "./tmp_uploads";
 const storage = new LocalFileStorage(tmpUploadsDir);
 
@@ -125,11 +126,13 @@ export async function action({ request, params }) {
 
   if (!files?.length) return { error: "Nenhuma foto enviada. Por favor, selecione uma selfie." };
 
+  // Chama função que cria arquivo temporário para a selfie e para as fotos do evento
   const selfieResponse = await photoController.handleSelfieSubmit(eventId, files[0]);
 
   if (selfieResponse?.error) return { error: selfieResponse.message };
 
-  const responsePython = await fetch("http://127.0.0.1:5000/api/filter-photos", {
+  // Chama a API Python para filtrar as fotos com base na selfie enviada
+  const responsePython = await fetch(`${faceRecognitionBaseUrl}/api/filter-photos`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -153,6 +156,7 @@ export async function action({ request, params }) {
     };
   }
 
+  // Busca as fotos filtradas pelo nome do arquivo
   const filteredPhotos = await photoController.getByQuery({
     where: {
       fileName: {
@@ -161,6 +165,7 @@ export async function action({ request, params }) {
     },
   });
 
+  // Limpa os arquivos temporários
   deleteDirectory(selfieResponse.data.selfiePath.split(`\selfie`)[0]);
   storage.remove(keyRef);
   clearDirectory(tmpUploadsDir);
@@ -219,6 +224,5 @@ export default function FaceFilteredPage() {
       </Card>
 
       <PhotosList photos={actionData?.filteredPhotos} eventId={event.id} userId={user?.id} pricePerPhoto={event.pricePerPhoto} />
-
     </div>
 }
