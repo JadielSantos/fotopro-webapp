@@ -139,6 +139,7 @@ export async function action({ request, params }) {
     },
     body: JSON.stringify({
       selfiePath: selfieResponse.data.selfiePath.replace(/\\/g, "\\\\"),
+      eventId: eventId,
     }),
   });
 

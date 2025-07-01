@@ -108,23 +108,23 @@ function RegisterForm() {
       <div className="flex max-w-md flex-col gap-4">
         <div className="flex items-center gap-2">
           <Radio
-            id="photographer"
-            name="role"
-            value="photographer"
-            onClick={() => setRole(UserRole.PHOTOGRAPHER)}
-            defaultChecked
-          />
-          <Label htmlFor="photographer" color="dark">Fotógrafo</Label>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Radio
             id="customer"
             name="role"
             value="customer"
             onClick={() => setRole(UserRole.CUSTOMER)}
+            defaultChecked
           />
           <Label htmlFor="customer" color="dark">Cliente</Label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Radio
+            id="photographer"
+            name="role"
+            value="photographer"
+            onClick={() => setRole(UserRole.PHOTOGRAPHER)}
+          />
+          <Label htmlFor="photographer" color="dark">Fotógrafo</Label>
         </div>
       </div>
 

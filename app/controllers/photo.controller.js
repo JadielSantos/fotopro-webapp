@@ -1,6 +1,12 @@
 import { photoModel } from "../models/photo.model.js";
 import { googleService } from "../services/google.service.js";
 import { handlelize, writeFileToTemp } from "../utils/util.js";
+import fs from "fs";
+import path from "path";
+import { handlelize } from "../utils/util.js";
+import crypto from "crypto";
+
+const STORAGE_BASE = path.resolve("public", "storage", "event_photos");
 
 class PhotoController {
   /**
@@ -49,14 +55,22 @@ class PhotoController {
   async getByQuery(query) {
     try {
       if (!query || typeof query !== "object") {
-        return { status: 400, message: "Invalid query parameters.", error: true };
+        return {
+          status: 400,
+          message: "Invalid query parameters.",
+          error: true,
+        };
       }
 
       const photos = await photoModel.getByQuery(query);
       return { status: 200, data: photos };
     } catch (error) {
       console.error("Error retrieving photos by query:", error);
-      return { status: 500, message: "Failed to retrieve photos by query.", error: true };
+      return {
+        status: 500,
+        message: "Failed to retrieve photos by query.",
+        error: true,
+      };
     }
   }
 
@@ -94,12 +108,12 @@ class PhotoController {
         const batch = files.slice(i, i + batchSize);
         const uploadPromises = batch.map(async (file) => {
           uploadedPhotos++;
-          
+
           const fileName = `${eventId}-${Date.now()}-${handlelize(file.name)}`;
           const uploadedFile = await googleService.uploadFile(
             authClient,
             file,
-            fileName,
+            fileName
           );
 
           photos.push({
@@ -143,20 +157,24 @@ class PhotoController {
         tempEventDir + "/selfie"
       );
 
-      const authClient = await googleService.authorize();
+      var driveFiles = [];
 
-      const driveFiles = await googleService.downloadFiles(
-        authClient,
-        eventId,
-        tempEventDir + "/photos"
-      );
+      if (process.env.ENABLE_GOOGLE_DRIVE == "true") {
+        const authClient = await googleService.authorize();
 
-      if (!driveFiles || driveFiles.length === 0) {
-        return {
-          status: 404,
-          message: "No photos found for the event.",
-          error: true,
-        };
+        driveFiles = await googleService.downloadFiles(
+          authClient,
+          eventId,
+          tempEventDir + "/photos"
+        );
+
+        if (!driveFiles || driveFiles.length === 0) {
+          return {
+            status: 404,
+            message: "No photos found for the event.",
+            error: true,
+          };
+        }
       }
 
       return {
@@ -182,7 +200,7 @@ class PhotoController {
    * @param {string} id ID da foto.
    * @return {Promise<Object>} Resultado da deleção ou erro.
    */
-  async deleteById(id) {
+  async deleteById(id, force = false) {
     try {
       if (!id) {
         return { status: 400, message: "Photo ID is required.", error: true };
@@ -193,7 +211,7 @@ class PhotoController {
         return { status: 404, message: "Photo not found.", error: true };
       }
 
-      if (photo.isCover) {
+      if (photo.isCover && !force) {
         let photoAux = await photoModel.getByQuery({
           where: { eventId: photo.eventId, isCover: false },
           take: 1,
@@ -205,7 +223,8 @@ class PhotoController {
         } else if (photoCount <= 1) {
           return {
             status: 400,
-            message: "Não é possível excluir a foto de capa, pois é a única foto do evento.",
+            message:
+              "Não é possível excluir a foto de capa, pois é a única foto do evento.",
             error: true,
           };
         }
@@ -216,15 +235,108 @@ class PhotoController {
       const authClient = await googleService.authorize();
 
       if (photo.fileId) {
-        await googleService.deleteFile(
-          authClient,
-          photo.fileId
-        );
+        await googleService.deleteFile(authClient, photo.fileId);
       }
 
       return { status: 200, message: "Photo deleted successfully." };
     } catch (error) {
       console.error("Error deleting photo:", error);
+      return { status: 500, message: "Failed to delete photo.", error: true };
+    }
+  }
+
+  async saveFileLocally(file, fileName, eventId) {
+    const eventDir = path.join(STORAGE_BASE, eventId);
+    await fs.promises.mkdir(eventDir, { recursive: true });
+
+    const filePath = path.join(eventDir, fileName);
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    await fs.promises.writeFile(filePath, buffer);
+
+    return {
+      fileName,
+      url: `/storage/event_photos/${eventId}/${fileName}`, // frontend deve resolver isso corretamente
+      path: filePath,
+    };
+  }
+
+  async uploadPhotosLocally(files, eventId) {
+    try {
+      if (!files || !eventId) {
+        return {
+          status: 400,
+          message: "Files and event ID are required.",
+          error: true,
+        };
+      }
+
+      const batchSize = 5;
+      const photos = [];
+      const photoCount = await photoModel.countByEvent(eventId);
+      let uploadedPhotos = 0;
+
+      for (const file of files) {
+        uploadedPhotos++;
+        const fileName = `${eventId}-${Date.now()}-${handlelize(file.name)}`;
+        const saved = await this.saveFileLocally(file, fileName, eventId);
+
+        photos.push({
+          eventId,
+          url: saved.url,
+          fileName: fileName,
+          fileId: null, // não há mais fileId externo
+          altText: fileName,
+          isCover: photos.length === 0 && photoCount === 0,
+        });
+      }
+
+      await photoModel.createMany(photos);
+
+      return { status: 201, data: photos };
+    } catch (error) {
+      console.error("Error uploading photos:", error);
+      return { status: 500, message: "Failed to upload photos.", error: true };
+    }
+  }
+
+  async deleteByIdLocally(id, force = false) {
+    try {
+      if (!id) {
+        return { status: 400, message: "Photo ID is required.", error: true };
+      }
+
+      const photo = await photoModel.getById(id);
+      if (!photo) {
+        return { status: 404, message: "Photo not found.", error: true };
+      }
+
+      if (photo.isCover && !force) {
+        let photoAux = await photoModel.getByQuery({
+          where: { eventId: photo.eventId, isCover: false },
+          take: 1,
+        });
+        const photoCount = await photoModel.countByEvent(photo.eventId);
+
+        if (photoAux?.length) {
+          await photoModel.update(photoAux[0].id, { isCover: true });
+        } else if (photoCount <= 1) {
+          return {
+            status: 400,
+            message:
+              "Não é possível excluir a foto de capa, pois é a única foto do evento.",
+            error: true,
+          };
+        }
+      }
+
+      await photoModel.delete(id);
+
+      const filePath = path.join(STORAGE_BASE, photo.eventId, photo.fileName);
+      await fs.promises.unlink(filePath);
+
+      return { status: 200, message: "Photo deleted successfully." };
+    } catch (error) {
       return { status: 500, message: "Failed to delete photo.", error: true };
     }
   }

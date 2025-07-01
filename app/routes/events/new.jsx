@@ -141,7 +141,6 @@ export default function NewEventPage() {
             name="date"
             placeholder="Selecione a data do evento"
             required
-            minDate={new Date()} // Não permite datas passadas
             displayFormat="dd/mm/yyyy"
           // onChange={(date) => {
           //   const formattedDate = date.toISOString().split("T")[0];
@@ -164,13 +163,13 @@ export default function NewEventPage() {
         </div>
         {!isPublic && (
           <div>
-            <Label htmlFor="emailsAccess" color="dark">Lista de Emails para Acessar</Label>
+            <Label htmlFor="accessHash" color="dark">Senha de acesso</Label>
             <TextInput
-              id="emailsAccess"
-              name="emailsAccess"
+              id="accessHash"
+              name="accessHash"
               type="text"
-              placeholder="Digite os emails separados por vírgula. Somente usuários com esses emails poderão acessar o evento."
-              required={!isPublic} // Campo obrigatório se o evento não for público
+              placeholder="Digite a senha de acesso ao evento"
+              required
             />
           </div>
         )}

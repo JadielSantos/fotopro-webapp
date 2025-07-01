@@ -68,7 +68,7 @@ export default function PhotosSelectionList({ title, photosSelections }) {
                 {actionData?.photos.map(photo => (
                   <img
                     key={photo.id}
-                    src={photo.url + "&sz=w300"}
+                    src={photo.url?.includes("drive") ? photo.url + "&sz=w300" : photo.url }
                     alt={`Selected Photo ${photo.fileName}`}
                     className="w-full h-40 object-cover rounded-md"
                   />

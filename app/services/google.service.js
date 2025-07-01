@@ -60,8 +60,18 @@ class GoogleService {
       fields: "id, thumbnailLink",
     });
 
+    const fileId = res.data.id;
+
+    await drive.permissions.create({
+      fileId,
+      requestBody: {
+        role: "reader",
+        type: "anyone",
+      },
+    });
+
     return {
-      fileId: res.data.id,
+      fileId,
       fileName: fileName,
       url: `https://drive.google.com/thumbnail?id=${res.data.id}`,
       thumbnailLink: res.data.thumbnailLink,

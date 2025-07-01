@@ -107,6 +107,35 @@ class PhotosSelectionController {
       };
     }
   }
+
+  async delete(id) {
+    try {
+      if (!id) {
+        return {
+          status: 400,
+          message: "ID inválido para exclusão da seleção de fotos.",
+          error: true,
+        };
+      }
+
+      const deletedSelection = await photosSelectionModel.delete(id);
+      if (!deletedSelection) {
+        return {
+          status: 404,
+          message: "Seleção de fotos não encontrada para exclusão.",
+          error: true,
+        };
+      }
+
+      return { status: 200, message: "Seleção de fotos excluída com sucesso." };
+    } catch (error) {
+      return {
+        status: 500,
+        message: "Não foi possível excluir a seleção de fotos.",
+        error: true,
+      };
+    }
+  }
 }
 
 export const photosSelectionController = new PhotosSelectionController();

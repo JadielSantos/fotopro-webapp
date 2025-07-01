@@ -88,10 +88,26 @@ export async function action({ request, params }) {
   };
 
   const formData = await parseFormData(request, uploadHandler);
+  const deleteEventId = formData.get("deleteEventId");
   const files = formData.getAll("photos");
 
+  if (deleteEventId) {
+    const deleteResponse = await eventController.delete(deleteEventId);
+    if (deleteResponse.error) {
+      return { error: deleteResponse.message };
+    }
+
+    return redirect("/events");
+  }
+
   if (files?.length) {
-    const uploadResponse = await photoController.uploadPhotos(files, params.eventId);
+    var uploadResponse = { error: false, message: "" };
+
+    if (process.env.ENABLE_GOOGLE_DRIVE === "true") {
+      uploadResponse = await photoController.uploadPhotos(files, params.eventId);
+    } else {
+      uploadResponse = await photoController.uploadPhotosLocally(files, params.eventId);
+    }
 
     if (uploadResponse.error) {
       return { error: uploadResponse.message };
@@ -113,7 +129,13 @@ export async function action({ request, params }) {
   if (formDataObj.photoCount) return { error: "No photos uploaded. Please select at least one photo." };
 
   if (formDataObj.deletePhotoId) {
-    const deleteResponse = await photoController.deleteById(formDataObj.deletePhotoId);
+    var deleteResponse = { error: false, message: "" };
+
+    if (process.env.ENABLE_GOOGLE_DRIVE === "true") {
+      deleteResponse = await photoController.deleteById(formDataObj.deletePhotoId);
+    } else {
+      deleteResponse = await photoController.deleteByIdLocally(formDataObj.deletePhotoId);
+    }
 
     if (deleteResponse.error) {
       return { error: deleteResponse.message };
@@ -305,6 +327,7 @@ export default function EditEventPage() {
                     size="xs"
                     className="rounded-full cursor-pointer absolute top-1.5 right-1.5"
                     aria-label="Excluir Foto"
+                    disabled={navigation.state === "loading" || navigation.state === "submitting"}
                   >
                     X
                   </Button>
@@ -318,6 +341,19 @@ export default function EditEventPage() {
           Este evento ainda não possui fotos.
         </Alert>
       )}
+
+      <Form id="delete-event" method="post" encType="multipart/form-data" className="space-y-4 w-full flex items-center justify-end">
+        <input type="hidden" name="deleteEventId" value={event.id} />
+        <Button
+          type="submit"
+          disabled={navigation.state === "loading" || navigation.state === "submitting"}
+          color="red"
+          className="mt-6 cursor-pointer" // to the left
+        >
+          Deletar Evento
+        </Button>
+      </Form>
+
     </div>
   );
 }

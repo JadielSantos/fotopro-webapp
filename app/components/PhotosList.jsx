@@ -56,7 +56,7 @@ export default function PhotosList({ photos, eventId, userId, pricePerPhoto }) {
               onClick={() => handlePhotoSelection(photo.id)}
             >
               <img
-                src={photo.url + "&sz=w600"}
+                src={photo.url?.includes("drive") ? photo.url + "&sz=w600" : photo.url }
                 alt={`Photo ${photo.id}`}
                 className="w-full h-52 object-cover rounded-lg"
               />
@@ -109,7 +109,7 @@ export default function PhotosList({ photos, eventId, userId, pricePerPhoto }) {
               return (
                 <img
                   key={photo.id}
-                  src={photo.url + "&sz=w300"}
+                  src={photo.url?.includes("drive") ? photo.url + "&sz=w300" : photo.url }
                   alt={`Selected Photo ${photo.fileName}`}
                   className="w-full h-40 object-cover rounded-md"
                 />

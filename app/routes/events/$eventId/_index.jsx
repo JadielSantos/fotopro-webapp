@@ -119,7 +119,7 @@ export default function EventPage() {
         {event.photos?.find(photo => photo.isCover) &&
           <div className="mb-6">
             <img
-              src={event.photos?.find(photo => photo.isCover)?.url + "&sz=w800"}
+              src={event.photos?.find(photo => photo.isCover)?.url?.includes("drive") ? event.photos?.find(photo => photo.isCover)?.url + "&sz=w800" : event.photos?.find(photo => photo.isCover)?.url}
               alt={`Cover photo of ${event.title}`}
               className="w-full h-64 object-cover rounded-lg shadow-md"
             />

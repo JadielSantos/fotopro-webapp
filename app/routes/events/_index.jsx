@@ -1,5 +1,5 @@
 import { useLoaderData, Link } from "react-router";
-import { Label, TextInput, Select, Button, Card, Carousel } from "flowbite-react";
+import { Button, Card, Carousel } from "flowbite-react";
 import { eventController } from "../../controllers/event.controller";
 import { getAuthToken } from "../../utils/auth.server";
 import { userController } from "../../controllers/user.controller";
@@ -18,7 +18,7 @@ export async function loader({ request }) {
 
   // Pega 3 eventos de maior relevanceScore
   const eventsRelevantResponse = await eventController.listRelevant(3);
-  const eventsListResponse = await eventController.listPaginated(currentPage, eventsPerPage, validationResponse?.data?.role);
+  const eventsListResponse = await eventController.listPaginated(currentPage, eventsPerPage, validationResponse?.data);
 
   if (eventsListResponse.error) {
     return { error: eventsListResponse.message };
@@ -43,7 +43,7 @@ export default function EventsPage() {
           <div key={event.id} className="relative h-full">
             {event.photos?.find(photo => photo.isCover) &&
               <img
-                src={event.photos?.find(photo => photo.isCover)?.url + "&sz=w800"}
+                src={event.photos?.find(photo => photo.isCover)?.url?.includes("drive") ? event.photos?.find(photo => photo.isCover)?.url + "&sz=w800" : event.photos?.find(photo => photo.isCover)?.url}
                 alt={event.title}
                 className="object-cover w-full h-full"
               />
@@ -64,9 +64,10 @@ export default function EventsPage() {
         {/* Filtro */}
         <div className="my-8">
           <h1 className="text-2xl font-bold mb-4">Eventos</h1>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> */}
+            
             {/* Dropdown de tipo de evento */}
-            <div>
+            {/* <div>
               <Label htmlFor="eventType" color="dark">Tipo de Evento</Label>
               <Select id="eventType" name="eventType">
                 <option value="">Todos</option>
@@ -74,10 +75,10 @@ export default function EventsPage() {
                 <option value="birthday">Aniversário</option>
                 <option value="corporate">Corporativo</option>
               </Select>
-            </div>
+            </div> */}
 
             {/* Dropdown de localização */}
-            <div>
+            {/* <div>
               <Label htmlFor="location" color="dark">Estado</Label>
               <Select id="state" name="state">
                 <option value="">Todos</option>
@@ -85,10 +86,10 @@ export default function EventsPage() {
                 <option value="PR">Paraná</option>
                 <option value="RS">Rio Grande do Sul</option>
               </Select>
-            </div>
+            </div> */}
 
             {/* Campo de busca */}
-            <div>
+            {/* <div>
               <Label htmlFor="search" color="dark">Buscar Evento</Label>
               <TextInput
                 id="search"
@@ -100,8 +101,8 @@ export default function EventsPage() {
           </div>
           <div className="mt-4">
             <Button type="submit" className="cursor-pointer">Filtrar</Button>
-          </div>
-        </div>
+          </div> */}
+        </div> 
 
         {/* Lista de eventos */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -116,7 +117,7 @@ export default function EventsPage() {
                 {event.photos?.find(photo => photo.isCover) &&
                   <div className="h-60 overflow-hidden rounded-t-lg">
                     <img
-                      src={event.photos?.find(photo => photo.isCover)?.url + "&sz=w600"}
+                      src={event.photos?.find(photo => photo.isCover)?.url?.includes("drive") ? event.photos?.find(photo => photo.isCover)?.url + "&sz=w600" : event.photos?.find(photo => photo.isCover)?.url}
                       alt={event.title}
                       className="w-full h-full object-cover"
                     />

@@ -1,6 +1,9 @@
 import { UserRole } from "../enums/user.enum.js";
 import { eventModel } from "../models/event.model.js";
 import bcrypt from "bcrypt";
+import { photoController } from "./photo.controller.js";
+import { photosSelectionController } from "./photosSelection.controller.js";
+import fs from "fs";
 
 class EventController {
   /**
@@ -13,7 +16,11 @@ class EventController {
       return { status: 200, data: events };
     } catch (error) {
       console.error("Erro ao listar eventos:", error);
-      return { status: 500, message: "Não foi possível listar os eventos.", error: true };
+      return {
+        status: 500,
+        message: "Não foi possível listar os eventos.",
+        error: true,
+      };
     }
   }
 
@@ -23,14 +30,20 @@ class EventController {
    * @param {number} limit Número de eventos por página.
    * @returns {Promise<Object>} Eventos paginados ou erro.
    */
-  async listPaginated(page = 1, limit = 20, userRole) {
+  async listPaginated(page = 1, limit = 20, user) {
     try {
       const skip = (page - 1) * limit;
       const total = await eventModel.count();
       const events = await eventModel.getByQuery({
         skip,
         take: limit,
-        where: userRole !== UserRole.ADMIN ? { photos: { some: {} }, isPublic: true } : {},
+        where:
+          user?.role !== UserRole.ADMIN
+            ? {
+                photos: { some: {} },
+                OR: [{ isPublic: true }, { userId: user?.id }],
+              }
+            : {},
         orderBy: { createdAt: "desc" },
         include: { user: true, photos: true },
       });
@@ -45,7 +58,11 @@ class EventController {
         },
       };
     } catch (error) {
-      return { status: 500, message: "Não foi possível listar os eventos paginados.", error: true };
+      return {
+        status: 500,
+        message: "Não foi possível listar os eventos paginados.",
+        error: true,
+      };
     }
   }
 
@@ -82,7 +99,7 @@ class EventController {
           status: 403,
           message: "Acesso negado. Senha incorreta.",
           error: true,
-        }
+        };
       }
 
       return {
@@ -90,7 +107,7 @@ class EventController {
         data: event,
         message: "Acesso autorizado.",
         error: false,
-      }
+      };
     } catch (error) {
       return {
         status: 500,
@@ -117,7 +134,11 @@ class EventController {
       return { status: 200, data: events };
     } catch (error) {
       console.error("Erro ao listar eventos relevantes:", error);
-      return { status: 500, message: "Não foi possível listar os eventos relevantes.", error: true };
+      return {
+        status: 500,
+        message: "Não foi possível listar os eventos relevantes.",
+        error: true,
+      };
     }
   }
 
@@ -126,7 +147,14 @@ class EventController {
    * @param {string} id ID do evento.
    * @returns {Promise<Object>} Evento encontrado ou erro.
    */
-  async findById(id, { includeUser = false , includePhotos = false, includePhotosSelections = false } = {}) {
+  async findById(
+    id,
+    {
+      includeUser = false,
+      includePhotos = false,
+      includePhotosSelections = false,
+    } = {}
+  ) {
     try {
       const event = await eventModel.getById(id, {
         includeUser,
@@ -139,7 +167,11 @@ class EventController {
       return { status: 200, data: event };
     } catch (error) {
       console.error("Erro ao buscar evento por ID:", error);
-      return { status: 500, message: "Não foi possível encontrar o evento.", error: true };
+      return {
+        status: 500,
+        message: "Não foi possível encontrar o evento.",
+        error: true,
+      };
     }
   }
 
@@ -151,19 +183,31 @@ class EventController {
   async create(eventData) {
     try {
       if (!eventData || typeof eventData !== "object") {
-        return { status: 400, message: "Dados do evento inválidos.", error: true };
+        return {
+          status: 400,
+          message: "Dados do evento inválidos.",
+          error: true,
+        };
       }
 
       const newEvent = await eventModel.create(eventData);
 
       if (!newEvent) {
-        return { status: 500, message: "Não foi possível criar o evento.", error: true };
+        return {
+          status: 500,
+          message: "Não foi possível criar o evento.",
+          error: true,
+        };
       }
 
       return { status: 200, data: newEvent };
     } catch (error) {
       console.error("Erro ao criar evento:", error);
-      return { status: 500, message: "Não foi possível criar o evento.", error: true };
+      return {
+        status: 500,
+        message: "Não foi possível criar o evento.",
+        error: true,
+      };
     }
   }
 
@@ -176,19 +220,31 @@ class EventController {
   async update(id, updateData) {
     try {
       if (!updateData || typeof updateData !== "object" || !id) {
-        return { status: 400, message: "Dados de atualização inválidos.", error: true };
+        return {
+          status: 400,
+          message: "Dados de atualização inválidos.",
+          error: true,
+        };
       }
 
       const updatedEvent = await eventModel.update(id, updateData);
 
       if (!updatedEvent) {
-        return { status: 404, message: "Evento não encontrado para atualização.", error: true };
+        return {
+          status: 404,
+          message: "Evento não encontrado para atualização.",
+          error: true,
+        };
       }
 
       return { status: 200, data: updatedEvent };
     } catch (error) {
       console.error("Erro ao atualizar evento:", error);
-      return { status: 500, message: "Não foi possível atualizar o evento.", error: true };
+      return {
+        status: 500,
+        message: "Não foi possível atualizar o evento.",
+        error: true,
+      };
     }
   }
 
@@ -203,16 +259,59 @@ class EventController {
         return { status: 400, message: "ID do evento inválido.", error: true };
       }
 
+      // Remove todas as fotos associadas ao evento antes de excluí-lo
+      const event = await eventModel.getById(id, {
+        includePhotos: true,
+        includePhotosSelections: true,
+      });
+      if (!event) {
+        return { status: 404, message: "Evento não encontrado.", error: true };
+      }
+
+      // Excluir fotos associadas ao evento
+      if (event.photos?.length) {
+        for (const photo of event.photos) {
+          if (process.env.ENABLE_GOOGLE_DRIVE === "true") {
+            await photoController.deleteById(photo.id, true);
+          } else {
+            await photoController.deleteByIdLocally(photo.id, true);
+          }
+        }
+      }
+
+      // Remove seleções de fotos associadas ao evento
+      if (event.photosSelections?.length) {
+        for (const selection of event.photosSelections) {
+          await photosSelectionController.delete(selection.id);
+        }
+      }
+
       const deletedEvent = await eventModel.delete(id);
 
       if (!deletedEvent) {
-        return { status: 404, message: "Evento não encontrado para exclusão.", error: true };
+        return {
+          status: 404,
+          message: "Evento não encontrado para exclusão.",
+          error: true,
+        };
+      }
+
+      if (process.env.ENABLE_GOOGLE_DRIVE !== "true") {
+        // Excluir pasta do evento localmente
+        const eventFolderPath = `public/storage/event_photos/${id}`;
+        if (fs.existsSync(eventFolderPath)) {
+          fs.rmdirSync(eventFolderPath, { recursive: true });
+        }
       }
 
       return { status: 200, data: deletedEvent };
     } catch (error) {
       console.error("Erro ao excluir evento:", error);
-      return { status: 500, message: "Não foi possível excluir o evento.", error: true };
+      return {
+        status: 500,
+        message: "Não foi possível excluir o evento.",
+        error: true,
+      };
     }
   }
 }
