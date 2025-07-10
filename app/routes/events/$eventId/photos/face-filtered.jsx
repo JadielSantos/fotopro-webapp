@@ -13,7 +13,7 @@ import AccessEventPage from "../../../../components/EventAccess";
 import { photosSelectionController } from "../../../../controllers/photosSelection.controller";
 import PhotosList from "../../../../components/PhotosList";
 
-const faceRecognitionBaseUrl = "http://127.0.0.1:5000";
+const faceRecognitionBaseUrl = process.env.PYTHON_ENDPOINT || "";
 const tmpUploadsDir = "./tmp_uploads";
 const storage = new LocalFileStorage(tmpUploadsDir);
 
